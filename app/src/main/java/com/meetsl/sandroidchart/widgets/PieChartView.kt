@@ -1,4 +1,4 @@
-package com.bjknrt.sandroidchart.widgets
+package com.meetsl.sandroidchart.widgets
 
 import android.content.Context
 import android.graphics.*

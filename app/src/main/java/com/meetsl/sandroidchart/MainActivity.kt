@@ -1,4 +1,4 @@
-package com.bjknrt.sandroidchart
+package com.meetsl.sandroidchart
 
 import android.graphics.Color
 import android.os.Bundle
