@@ -168,10 +168,27 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                     val tempMiddleY = sin(coorAngle).toFloat() * (radius + initLength) + radius
                     it.dMiddlePoint =
                         correctDescRectF(PointF(tempMiddleX, tempMiddleY), it.quadrant)
-                    val endPointX =
-                        if (it.quadrant == 1 || it.quadrant == 4) it.dMiddlePoint!!.x + drawHorizontalLineLength
-                        else it.dMiddlePoint!!.x - drawHorizontalLineLength
-                    it.dEndPoint = PointF(endPointX, it.dMiddlePoint!!.y)
+                    val endPointX: Float
+                    val endPointY: Float
+                    if (it.quadrant == 1 || it.quadrant == 4) {
+                        endPointX = it.dMiddlePoint!!.x + drawHorizontalLineLength
+                        endPointY = it.dMiddlePoint!!.y
+                    } else {
+                        if (it.dStartPoint!!.x == it.dMiddlePoint!!.x) {
+                            // y 轴上竖直延伸
+                            if (it.dStartPoint!!.y > it.dMiddlePoint!!.y) {
+                                endPointX = it.dMiddlePoint!!.x
+                                endPointY = it.dMiddlePoint!!.y - drawHorizontalLineLength
+                            } else {
+                                endPointX = it.dMiddlePoint!!.x
+                                endPointY = it.dMiddlePoint!!.y + drawHorizontalLineLength
+                            }
+                        } else {
+                            endPointX = it.dMiddlePoint!!.x - drawHorizontalLineLength
+                            endPointY = it.dMiddlePoint!!.y
+                        }
+                    }
+                    it.dEndPoint = PointF(endPointX, endPointY)
 
                     descCount++
                     //文字位置
