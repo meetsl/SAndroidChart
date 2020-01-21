@@ -30,7 +30,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
     private val drawHorizontalLineLength = 50
     private var centerX = 0f
     private var centerY = 0f
-    private lateinit var chartViewBound: RectF
+    private var chartViewBound: RectF? = null
     //象限统计计数
     private var descCount = 0
     private val executor = Executors.newFixedThreadPool(3)
@@ -60,8 +60,10 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.AT_MOST) {
             //高度扩充  strokeWidth * 2
-            val height = chartViewBound.height() + strokeWidth * 2 + 0.5f
-            setMeasuredDimension(widthMeasureSpec, height.roundToInt())
+            if (chartViewBound != null) {
+                val height = chartViewBound!!.height() + strokeWidth * 2 + 0.5f
+                setMeasuredDimension(widthMeasureSpec, height.roundToInt())
+            }
         }
     }
 
