@@ -58,7 +58,8 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.AT_MOST) {
+        val mode = MeasureSpec.getMode(heightMeasureSpec)
+        if (mode == MeasureSpec.AT_MOST || mode == MeasureSpec.UNSPECIFIED) {
             //高度扩充  strokeWidth * 2
             if (chartViewBound != null) {
                 val height = chartViewBound!!.height() + strokeWidth * 2 + 0.5f
