@@ -8,7 +8,7 @@ import java.util.concurrent.Executors
 import kotlin.math.*
 
 /**
- * @author : ShiLong
+ * @author : meetsl
  * date: 2020/1/19.
  * desc : default.
  */
@@ -41,6 +41,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
 
     init {
         typographic()
+        //圆绘制所在矩形位置
         viewRectF = RectF(0f, 0f, 2 * radius, 2 * radius)
         mainPaint.style = Paint.Style.STROKE
         mainPaint.isAntiAlias = true
@@ -72,7 +73,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        //坐标中心
+        //画布移动，使绘制显示在中心
         canvas.translate(centerX, centerY)
         if (piePartList.isNotEmpty()) {
             piePartList.forEach {
@@ -112,6 +113,9 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
         viewRectF.set(0f, 0f, 2 * radius, 2 * radius)
     }
 
+    /**
+     * 绘制排版
+     */
     private fun typographic() {
         executor.submit {
             //计算总角度
@@ -223,7 +227,6 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                 val b = radius - k * radius
                 pointF.y = pointF.y + (percentTextSize - descTextSize)
                 pointF.x = (pointF.y - b) / k
-                println("象限起始边界位置 $k $b ${pointF.x} ${pointF.y}")
             }
             return pointF
         }
@@ -259,6 +262,9 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
         return pointF
     }
 
+    /**
+     * 获取 view 边界
+     */
     private fun getPieChartViewBound(): RectF {
         var minX = 0f
         var minY = 0f
@@ -286,7 +292,6 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
             }
             bound.set(minX, minY, maxX, maxY)
         }
-        println("getPieChartViewBound ----- $bound")
         return bound
     }
 
