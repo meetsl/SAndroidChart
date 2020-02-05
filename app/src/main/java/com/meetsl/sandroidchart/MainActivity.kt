@@ -20,4 +20,8 @@ class MainActivity : AppCompatActivity() {
         startActivity(Intent(this, HistogramDemoActivity::class.java))
     }
 
+    fun complexHistogram(view: View) {
+        startActivity(Intent(this, ComplexHistogramDemoActivity::class.java))
+    }
+
 }

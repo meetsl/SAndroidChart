@@ -11,7 +11,7 @@ import android.view.View
 import kotlin.math.roundToInt
 
 /**
- * @author : ShiLong
+ * @author : meetsl
  * date: 2020/2/4.
  * desc : default.
  */
@@ -197,7 +197,7 @@ class HistogramView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
             }
             MotionEvent.ACTION_MOVE -> {
                 endX = event.x
-                var moveX = endX - startX
+                var moveX = (endX - startX) / resources.displayMetrics.density
                 if (maxShowPillarNum < pillarRectList.size) { //没有全部显示
                     //左移、边界判断
                     if (moveX > 0) {

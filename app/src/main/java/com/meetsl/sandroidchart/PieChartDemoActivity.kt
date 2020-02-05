@@ -7,7 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_pie_chart.*
 
 /**
- * @author : ShiLong
+ * @author : meetsl
  * date: 2020/2/4.
  * desc : default.
  */

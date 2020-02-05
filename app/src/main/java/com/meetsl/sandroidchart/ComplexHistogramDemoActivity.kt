@@ -8,9 +8,9 @@ import androidx.appcompat.app.AppCompatActivity
  * date: 2020/2/4.
  * desc : default.
  */
-class HistogramDemoActivity : AppCompatActivity() {
+class ComplexHistogramDemoActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_histogram)
+        setContentView(R.layout.activity_complex_histogram)
     }
 }
