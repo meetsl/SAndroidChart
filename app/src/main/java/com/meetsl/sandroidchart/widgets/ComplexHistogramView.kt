@@ -329,8 +329,10 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             val y = k * maxShowXPoint.x + b
             shadowPath.lineTo(maxShowXPoint.x, y)
             linePath.lineTo(maxShowXPoint.x, y)
+            shadowPath.lineTo(maxShowXPoint.x, maxShowXPoint.y)
+        }else{
+            shadowPath.lineTo(percentPointList[lastShowIndex].x, maxShowXPoint.y)
         }
-        shadowPath.lineTo(maxShowXPoint.x, maxShowXPoint.y)
         canvas.drawPath(shadowPath, brokenShaderPaint)
         canvas.drawPath(linePath, brokenLinePaint)
         //绘制Y坐标文字
