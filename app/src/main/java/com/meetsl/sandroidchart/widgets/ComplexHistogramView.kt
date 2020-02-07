@@ -50,6 +50,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     private val pillarPaint = Paint()
     private val textPaint = Paint()
     private val descPaint = Paint()
+    private val shadowPath = Path()
     private val linePath = Path()
     private val arrowPath = Path()
     private val arrowSize = 20f
@@ -209,6 +210,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         brokenShaderPaint.isAntiAlias = true
         brokenLinePaint.color = percentColor
         brokenLinePaint.isAntiAlias = true
+        brokenLinePaint.style = Paint.Style.STROKE
         brokenLinePaint.strokeWidth = 5f
         descPaint.isAntiAlias = true
         descPaint.textSize = descTextSize
@@ -278,7 +280,9 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
 
         }
         //绘制折线图
+        shadowPath.reset()
         linePath.reset()
+        shadowPath.moveTo(originalPoint.x, originalPoint.y)
         linePath.moveTo(originalPoint.x, originalPoint.y)
         var firstFit = true
         var lastShowIndex = 0
@@ -287,33 +291,34 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             val pointX = percentPoint.x
             if (pointX in startShowPillarX..endShowPillarX) {
                 if (i > 0) {
-                    val preHidePoint = percentPointList[i - 1]
                     if (firstFit) {
+                        val preHidePoint = percentPointList[i - 1]
                         val k =
                             (percentPoint.y - preHidePoint.y) / (percentPoint.x - preHidePoint.x)
                         val b = percentPoint.y - k * percentPoint.x
                         val y = k * originalPoint.x + b
-                        linePath.lineTo(originalPoint.x, y)
-                        canvas.drawLine(
-                            originalPoint.x,
-                            y,
-                            percentPoint.x,
-                            percentPoint.y,
-                            brokenLinePaint
-                        )
+                        shadowPath.lineTo(originalPoint.x, y)
+                        shadowPath.lineTo(percentPoint.x, percentPoint.y)
+                        linePath.moveTo(originalPoint.x, y)
+                        linePath.lineTo(percentPoint.x, percentPoint.y)
                         firstFit = false
                     } else {
-                        canvas.drawLine(
-                            preHidePoint.x,
-                            preHidePoint.y,
-                            percentPoint.x,
-                            percentPoint.y,
-                            brokenLinePaint
-                        )
+                        val preIndex = if (i - 2 < 0) 0 else i - 2
+                        val nextIndex = if (i + 1 > percentPointList.size - 1) percentPointList.size - 1 else i + 1
+                        val controlAX = percentPointList[i-1].x + (percentPoint.x - percentPointList[preIndex].x)/4
+                        val controlAY = percentPointList[i-1].y + (percentPoint.y - percentPointList[preIndex].y)/4
+                        val controlBX = percentPoint.x - (percentPointList[nextIndex].x - percentPointList[i -1].x)/4
+                        val controlBY = percentPoint.y - (percentPointList[nextIndex].y - percentPointList[i -1].y)/4
+                        shadowPath.cubicTo(controlAX,controlAY,controlBX,controlBY,percentPoint.x, percentPoint.y)
+                        linePath.cubicTo(controlAX,controlAY,controlBX,controlBY,percentPoint.x, percentPoint.y)
                     }
+                } else {
+                    shadowPath.lineTo(percentPoint.x, percentPoint.y)
+                    linePath.lineTo(percentPoint.x, percentPoint.y)
+                    if (firstFit)
+                        firstFit = false
                 }
                 lastShowIndex = i
-                linePath.lineTo(percentPoint.x, percentPoint.y)
             }
         }
         if (lastShowIndex < percentPointList.size - 1) {
@@ -322,11 +327,12 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             val k = (nextHidePoint.y - percentPoint.y) / (nextHidePoint.x - percentPoint.x)
             val b = percentPoint.y - k * percentPoint.x
             val y = k * maxShowXPoint.x + b
+            shadowPath.lineTo(maxShowXPoint.x, y)
             linePath.lineTo(maxShowXPoint.x, y)
-            canvas.drawLine(percentPoint.x, percentPoint.y, maxShowXPoint.x, y, brokenLinePaint)
         }
-        linePath.lineTo(maxShowXPoint.x, maxShowXPoint.y)
-        canvas.drawPath(linePath, brokenShaderPaint)
+        shadowPath.lineTo(maxShowXPoint.x, maxShowXPoint.y)
+        canvas.drawPath(shadowPath, brokenShaderPaint)
+        canvas.drawPath(linePath, brokenLinePaint)
         //绘制Y坐标文字
         for (i in 0 until verList.size) {
             val text = verList[i].toString()
