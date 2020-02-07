@@ -1,5 +1,6 @@
 package com.meetsl.sandroidchart.widgets
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
@@ -16,9 +17,10 @@ import kotlin.math.roundToInt
 class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
     View(context, attrs, defStyleAttr) {
     private var horList = mutableListOf<Triple<Int, Int, Int>>()
+    private var descList = mutableListOf("金额", "占比")
     var horDataList =
         mutableListOf(
-            800, 1200, 1600, 2500, 2000, 1000, 3300, 3800, 4200, 3300, 3800, 4200, 1200,
+            800, 1200, 1600, 2500, 5000, 1000, 3300, 3800, 4200, 3300, 3800, 4200, 1200,
             1600, 2500, 2000, 1000, 3300, 3800, 4200, 3300, 3800, 4200
         )
     var horPercentDataList = mutableListOf(
@@ -32,16 +34,27 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     var pillarWidth = 40f
     var horizontalMargin = 20f
     var verticalMargin = 40f
+    var descMargin = 40f
     var textVerticalMargin = 5f
     var yUnit = 1000
     var yRightUnit = 5
     var verticalTextSize = 32f
+    var descTextSize = 38f
+    var descCircleRadius = 12f
+    val windowPadding = 20f
+    val windowMargin = 20f
+    private var windowHeight = 0f
     private val linePaint = Paint()
     private val brokenShaderPaint = Paint()
     private val brokenLinePaint = Paint()
     private val pillarPaint = Paint()
     private val textPaint = Paint()
+    private val descPaint = Paint()
     private val linePath = Path()
+    private val arrowPath = Path()
+    private val arrowSize = 20f
+    private val windowShadowPaint = Paint()
+    private val windowPaint = Paint()
     var linePosList = mutableListOf<Float>()
     var coordinateLines = mutableListOf<Float>()
     private val pillarRectList = mutableListOf<RectF>()
@@ -61,8 +74,12 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     private var year = 2019
     private var month = 8
     private var day = 25
-    private lateinit var originalPoint: PointF //原点坐标
-    private lateinit var maxShowXPoint: PointF //X轴最大坐标点
+    private var originalPoint: PointF //原点坐标
+    private var maxShowXPoint: PointF //X轴最大坐标点
+    private var chartRectF = RectF()
+    private var windowInfo: SWindowInfo? = null
+    val pillarColor = Color.parseColor("#3877E1")
+    val percentColor = Color.parseColor("#E84742")
 
     init {
         val sorted = horDataList.sorted()
@@ -100,6 +117,9 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         val maxVerticalTextWidth = textPaint.measureText(verList[0].toString())
         val maxVerticalRightTextWidth = textPaint.measureText("${verRightList[0]}%")
         val chartLeftMargin = horizontalMargin + maxVerticalTextWidth + 10 //10 文字位置右侧距图标的距离
+        windowHeight = verticalTextSize * 2 + textVerticalMargin + 2 * windowPadding
+        val chartTopMargin =
+            (verticalMargin + descTextSize + descMargin).coerceAtLeast(windowHeight + 2 * windowMargin)
         val chartWidth =
             horDataList.size.coerceAtMost(maxShowPillarNum) * (pillarWidth + 2 * horizontalSpace)
         val chartHeight = (verList.size - 1) * verticalSpace
@@ -107,13 +127,17 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         endShowPillarX = startShowPillarX + chartWidth
         chartNeedWidth = chartLeftMargin + chartWidth + maxVerticalRightTextWidth + horizontalMargin
         chartNeedHeight =
-            verticalMargin * 2 + chartHeight + verticalTextSize * 3 + textVerticalMargin
-        originalPoint = PointF(chartLeftMargin, verticalMargin + chartHeight)
-        maxShowXPoint = PointF(chartLeftMargin + chartWidth, verticalMargin + chartHeight)
+            chartTopMargin + verticalMargin + chartHeight + verticalTextSize * 3 + textVerticalMargin
+        originalPoint = PointF(chartLeftMargin, chartTopMargin + chartHeight)
+        maxShowXPoint = PointF(chartLeftMargin + chartWidth, chartTopMargin + chartHeight)
+        chartRectF.left = chartLeftMargin
+        chartRectF.top = chartTopMargin
+        chartRectF.right = maxShowXPoint.x
+        chartRectF.bottom = maxShowXPoint.y
         for (i in 0 until verList.size) {
             val textX =
                 horizontalMargin + maxVerticalTextWidth - textPaint.measureText(verList[i].toString())
-            val textY = verticalMargin + i * verticalSpace + verticalTextSize / 2
+            val textY = chartTopMargin + i * verticalSpace + verticalTextSize / 2
             verTextPosList.add(textX)
             verTextPosList.add(textY)
             val rightTextX = chartLeftMargin + chartWidth + 10
@@ -122,7 +146,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         }
         //计算图标线段位置
         for (i in 0 until verList.size - 1) {
-            val posY = i * verticalSpace + verticalMargin
+            val posY = i * verticalSpace + chartTopMargin
             val endX = chartLeftMargin + chartWidth
             linePosList.add(chartLeftMargin)
             linePosList.add(posY)
@@ -131,22 +155,22 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         }
         //Y轴
         coordinateLines.add(chartLeftMargin)
-        coordinateLines.add(verticalMargin)
+        coordinateLines.add(chartTopMargin)
         coordinateLines.add(chartLeftMargin)
-        coordinateLines.add(chartHeight + verticalMargin)
+        coordinateLines.add(chartHeight + chartTopMargin)
         //X轴
         coordinateLines.add(chartLeftMargin)
-        coordinateLines.add(chartHeight + verticalMargin)
+        coordinateLines.add(chartHeight + chartTopMargin)
         coordinateLines.add(chartLeftMargin + chartWidth)
-        coordinateLines.add(chartHeight + verticalMargin)
+        coordinateLines.add(chartHeight + chartTopMargin)
         linePaint.isAntiAlias = true
         //计算柱状位置和x轴文字文字
         for (i in 0 until horDataList.size) {
             val left = i * (2 * horizontalSpace + pillarWidth) + horizontalSpace + chartLeftMargin
             val top =
-                (chartHeight + verticalMargin) - (horDataList[i] / yUnit.toFloat()) * verticalSpace
+                (chartHeight + chartTopMargin) - (horDataList[i] / yUnit.toFloat()) * verticalSpace
             val right = left + pillarWidth
-            val bottom = verticalMargin + chartHeight - 1 //-1不压抽线
+            val bottom = chartTopMargin + chartHeight - 1 //-1不压抽线
             val rectF = RectF(left, top, right, bottom)
             pillarRectList.add(rectF)
             //计算值的文字位置
@@ -158,7 +182,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             val horValue = horList[i]
             val textX =
                 left + pillarWidth / 2 - textPaint.measureText(getHorFormatStr(horValue)) / 2
-            val textY = verticalMargin + chartHeight + verticalTextSize + textVerticalMargin
+            val textY = chartTopMargin + chartHeight + verticalTextSize + textVerticalMargin
             horTextPosList.add(textX)
             horTextPosList.add(textY)
             //横坐标年月标识
@@ -172,28 +196,24 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             //计算折线路径
             val pointLeft = left + pillarWidth / 2
             val pointTop =
-                (chartHeight + verticalMargin) - (horPercentDataList[i] / yRightUnit.toFloat()) * verticalSpace
+                (chartHeight + chartTopMargin) - (horPercentDataList[i] / yRightUnit.toFloat()) * verticalSpace
             percentPointList.add(PointF(pointLeft, pointTop))
         }
-        pillarPaint.color = Color.parseColor("#3877E1")
+        pillarPaint.color = pillarColor
         pillarPaint.isAntiAlias = true
         brokenShaderPaint.shader = LinearGradient(
-            0f, verticalMargin,
+            0f, chartTopMargin,
             0f, originalPoint.y,
-            Color.parseColor("#E84742"), Color.TRANSPARENT, Shader.TileMode.CLAMP
+            percentColor, Color.TRANSPARENT, Shader.TileMode.CLAMP
         )
         brokenShaderPaint.isAntiAlias = true
-        brokenLinePaint.color = Color.parseColor("#E84742")
+        brokenLinePaint.color = percentColor
         brokenLinePaint.isAntiAlias = true
         brokenLinePaint.strokeWidth = 5f
-    }
-
-    private fun getHorYearMonthStr(horValue: Triple<Int, Int, Int>): String {
-        return when (horFormat) {
-            2 -> "${horValue.first}年"
-            3 -> "${horValue.first}年${horValue.second}月"
-            else -> "${horValue.first}年"
-        }
+        descPaint.isAntiAlias = true
+        descPaint.textSize = descTextSize
+        windowPaint.isAntiAlias = true
+        windowPaint.color = pillarColor
     }
 
     constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
@@ -214,6 +234,35 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         if (dx > horizontalMargin) {
             canvas.translate(dx, 0f)
         }
+        //绘制图标描述
+        descPaint.color = pillarColor
+        val circleY = descTextSize / 3
+        canvas.drawCircle(
+            chartRectF.left + circleY,
+            chartRectF.top - descMargin - circleY,
+            descCircleRadius,
+            descPaint
+        )
+        canvas.drawText(
+            descList[0],
+            chartRectF.left + 2 * circleY + textVerticalMargin,
+            chartRectF.top - descMargin,
+            descPaint
+        )
+        descPaint.color = percentColor
+        val textWidth = descPaint.measureText(descList[0])
+        canvas.drawCircle(
+            chartRectF.left + 2 * circleY + textVerticalMargin + textWidth + horizontalSpace + circleY,
+            chartRectF.top - descMargin - circleY,
+            descCircleRadius,
+            descPaint
+        )
+        canvas.drawText(
+            descList[1],
+            chartRectF.left + 2 * circleY + textVerticalMargin + textWidth + horizontalSpace + 2 * circleY + textVerticalMargin,
+            chartRectF.top - descMargin,
+            descPaint
+        )
         //绘制坐标内分隔线
         linePaint.color = Color.RED
         canvas.drawLines(linePosList.toFloatArray(), linePaint)
@@ -340,13 +389,45 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                     )
             }
         }
+        //显示Desc Window
+        if (windowInfo != null) {
+            val shadowSize = 2f
+            val windowRectF = windowInfo!!.windowRectF
+            canvas.drawRoundRect(windowRectF, 5f, 5f, windowShadowPaint)
+            windowRectF.inset(shadowSize, shadowSize)
+            canvas.drawRoundRect(windowRectF, 5f, 5f, windowPaint)
+            arrowPath.reset()
+            val arrowPointF = windowInfo!!.arrowPointF
+            arrowPath.moveTo(arrowPointF.x, arrowPointF.y)
+            arrowPath.lineTo(arrowPointF.x - arrowSize / 2, windowRectF.bottom)
+            arrowPath.lineTo(arrowPointF.x + arrowSize / 2, windowRectF.bottom)
+            arrowPath.reset()
+            arrowPath.moveTo(arrowPointF.x, arrowPointF.y - shadowSize)
+            arrowPath.lineTo(arrowPointF.x - (arrowSize - shadowSize) / 2, windowRectF.bottom)
+            arrowPath.lineTo(arrowPointF.x + (arrowSize - shadowSize) / 2, windowRectF.bottom)
+            canvas.drawPath(arrowPath, windowPaint)
+            canvas.drawText(
+                windowInfo!!.timeText,
+                windowRectF.left + windowPadding,
+                windowRectF.top + windowPadding + verticalTextSize * 2 / 3,
+                textPaint
+            )
+            canvas.drawText(
+                windowInfo!!.valueText,
+                windowRectF.left + windowPadding,
+                windowRectF.top + windowPadding + verticalTextSize * 2 / 3 + textVerticalMargin + verticalTextSize,
+                textPaint
+            )
+        }
     }
 
     var startX = 0f
     var endX = 0f
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
+                windowInfo = null
                 startX = event.x
                 endX = event.x
             }
@@ -402,9 +483,62 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 endX = event.x
                 val stopX = endX - startX
+                if (stopX >= -0.5f && stopX <= 0.5f && chartRectF.contains(event.x, event.y)) {
+                    createDataWindow(event.x)
+                }
+                postInvalidate()
             }
         }
         return true
+    }
+
+    private fun createDataWindow(targetX: Float) {
+        //计算点击位置所在柱状图
+        for (i in pillarRectList.indices) {
+            val pillarRect = pillarRectList[i]
+            val matchLeft = pillarRect.left - horizontalSpace
+            val matchRight = pillarRect.right + horizontalSpace
+            if (targetX in matchLeft..matchRight) {
+                val timeText = getHorFormatStr(horList[i])
+                val valueText =
+                    "${descList[0]}:${horDataList[i]} ${descList[1]}:${horPercentDataList[i]}%"
+                val arrowPositionX = pillarRect.centerX()
+                val arrowPositionY = pillarRect.top.coerceAtMost(percentPointList[i].y)
+                val textWidth = textPaint.measureText(valueText)
+                val windowWidth = textWidth + 2 * windowPadding
+                val overRightX = chartNeedWidth - arrowPositionX - windowWidth / 2 //右边空间是否能放下window
+                val translateLeftX = if (overRightX < 0) overRightX else 0f //向左平移距离
+                val overLeftX = arrowPositionX - horizontalMargin - windowWidth / 2
+                val translateRightX = if (overLeftX < 0) -overLeftX else 0f //向右平移距离
+                val windowLeft = arrowPositionX - windowWidth / 2 + translateLeftX + translateRightX
+                val windowBottom = arrowPositionY - windowMargin
+                val windowRectF = RectF(
+                    windowLeft,
+                    windowBottom - windowHeight,
+                    windowLeft + windowWidth,
+                    windowBottom
+                )
+                val arrowPointF = PointF(arrowPositionX, arrowPositionY)
+                if (windowInfo == null) {
+                    windowInfo = SWindowInfo(timeText, valueText, windowRectF, arrowPointF)
+                } else {
+                    windowInfo?.apply {
+                        this.timeText = timeText
+                        this.valueText = valueText
+                        this.windowRectF = windowRectF
+                        this.arrowPointF = arrowPointF
+                    }
+                }
+                val radialGradient = RadialGradient(
+                    windowRectF.centerX(), windowRectF.centerY(), windowRectF.width(),
+                    intArrayOf(pillarColor, Color.TRANSPARENT),
+                    floatArrayOf(0f, 0.8f),
+                    Shader.TileMode.CLAMP
+                )
+                windowShadowPaint.shader = radialGradient
+                break
+            }
+        }
     }
 
     private fun getHorFormatStr(value: Triple<Int, Int, Int>): String {
@@ -415,11 +549,27 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             else -> "${value.second}" + "月"
         }
     }
+
+    private fun getHorYearMonthStr(horValue: Triple<Int, Int, Int>): String {
+        return when (horFormat) {
+            2 -> "${horValue.first}年"
+            3 -> "${horValue.first}年${horValue.second}月"
+            else -> "${horValue.first}年"
+        }
+    }
 }
 
 data class STriple<A, B, C>(
     var first: A,
     var second: B,
     var third: C
+)
+
+data class SWindowInfo(
+    var timeText: String,
+    var valueText: String,
+    var windowRectF: RectF,
+    var arrowPointF: PointF,
+    var isShowing: Boolean = false
 )
 
