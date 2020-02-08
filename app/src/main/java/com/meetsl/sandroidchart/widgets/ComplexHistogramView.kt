@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import java.util.*
@@ -230,6 +231,11 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         }
     }
 
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        Log.i("onSizeChanged","------------")
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val dx = (width - chartNeedWidth) / 2
@@ -304,13 +310,32 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                         firstFit = false
                     } else {
                         val preIndex = if (i - 2 < 0) 0 else i - 2
-                        val nextIndex = if (i + 1 > percentPointList.size - 1) percentPointList.size - 1 else i + 1
-                        val controlAX = percentPointList[i-1].x + (percentPoint.x - percentPointList[preIndex].x)/4
-                        val controlAY = percentPointList[i-1].y + (percentPoint.y - percentPointList[preIndex].y)/4
-                        val controlBX = percentPoint.x - (percentPointList[nextIndex].x - percentPointList[i -1].x)/4
-                        val controlBY = percentPoint.y - (percentPointList[nextIndex].y - percentPointList[i -1].y)/4
-                        shadowPath.cubicTo(controlAX,controlAY,controlBX,controlBY,percentPoint.x, percentPoint.y)
-                        linePath.cubicTo(controlAX,controlAY,controlBX,controlBY,percentPoint.x, percentPoint.y)
+                        val nextIndex =
+                            if (i + 1 > percentPointList.size - 1) percentPointList.size - 1 else i + 1
+                        val controlAX =
+                            percentPointList[i - 1].x + (percentPoint.x - percentPointList[preIndex].x) / 4
+                        val controlAY =
+                            percentPointList[i - 1].y + (percentPoint.y - percentPointList[preIndex].y) / 4
+                        val controlBX =
+                            percentPoint.x - (percentPointList[nextIndex].x - percentPointList[i - 1].x) / 4
+                        val controlBY =
+                            percentPoint.y - (percentPointList[nextIndex].y - percentPointList[i - 1].y) / 4
+                        shadowPath.cubicTo(
+                            controlAX,
+                            controlAY,
+                            controlBX,
+                            controlBY,
+                            percentPoint.x,
+                            percentPoint.y
+                        )
+                        linePath.cubicTo(
+                            controlAX,
+                            controlAY,
+                            controlBX,
+                            controlBY,
+                            percentPoint.x,
+                            percentPoint.y
+                        )
                     }
                 } else {
                     shadowPath.lineTo(percentPoint.x, percentPoint.y)
@@ -330,7 +355,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             shadowPath.lineTo(maxShowXPoint.x, y)
             linePath.lineTo(maxShowXPoint.x, y)
             shadowPath.lineTo(maxShowXPoint.x, maxShowXPoint.y)
-        }else{
+        } else {
             shadowPath.lineTo(percentPointList[lastShowIndex].x, maxShowXPoint.y)
         }
         canvas.drawPath(shadowPath, brokenShaderPaint)
@@ -491,8 +516,14 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 endX = event.x
                 val stopX = endX - startX
-                if (stopX >= -0.5f && stopX <= 0.5f && chartRectF.contains(event.x, event.y)) {
-                    createDataWindow(event.x)
+                //画布移动后，点击位置修正
+                val dx = (width - chartNeedWidth) / 2
+                var clickCharX = event.x
+                if (dx > horizontalMargin) {
+                    clickCharX -= dx
+                }
+                if (stopX >= -0.5f && stopX <= 0.5f && chartRectF.contains(clickCharX, event.y)) {
+                    createDataWindow(clickCharX)
                 }
                 postInvalidate()
             }
