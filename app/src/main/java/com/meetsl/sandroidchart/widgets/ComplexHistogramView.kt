@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import java.util.*
@@ -42,8 +41,8 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     var verticalTextSize = 32f
     var descTextSize = 38f
     var descCircleRadius = 12f
-    val windowPadding = 20f
-    val windowMargin = 20f
+    private val windowPadding = 20f
+    private val windowMargin = 20f
     private var windowHeight = 0f
     private val linePaint = Paint()
     private val brokenShaderPaint = Paint()
@@ -231,15 +230,10 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         }
     }
 
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        super.onSizeChanged(w, h, oldw, oldh)
-        Log.i("onSizeChanged","------------")
-    }
-
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val dx = (width - chartNeedWidth) / 2
-        if (dx > horizontalMargin) {
+        if (dx > 0f) {
             canvas.translate(dx, 0f)
         }
         //绘制图标描述
@@ -519,7 +513,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                 //画布移动后，点击位置修正
                 val dx = (width - chartNeedWidth) / 2
                 var clickCharX = event.x
-                if (dx > horizontalMargin) {
+                if (dx > 0f) {
                     clickCharX -= dx
                 }
                 if (stopX >= -0.5f && stopX <= 0.5f && chartRectF.contains(clickCharX, event.y)) {
