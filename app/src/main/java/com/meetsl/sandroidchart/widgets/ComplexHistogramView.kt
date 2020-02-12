@@ -20,12 +20,33 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     private var descList = mutableListOf("金额", "占比")
     var horDataList =
         mutableListOf(
-            800, 1200, 1600, 2500, 5000, 1000, 3300, 3800, 4200, 3300, 3800, 4200, 1200,
-            1600, 2500, 2000, 1000, 3300, 3800, 4200, 3300, 3800, 4200
+            800f,
+            1200f,
+            1600f,
+            2500f,
+            5000f,
+            1000f,
+            3300f,
+            3800f,
+            4200f,
+            3300f,
+            3800f,
+            4200f,
+            1200f,
+            1600f,
+            2500f,
+            2000f,
+            1000f,
+            3300f,
+            3800f,
+            4200f,
+            3300f,
+            3800f,
+            4200f
         )
     var horPercentDataList = mutableListOf(
         3f, 4f, 8f, 10f, 12f, 18f, 16f, 4f, 8f, 10f, 12f, 18f, 16f, 4f,
-        10f, 12f, 18f, 16f, 4f, 8f, 10f, 12f, 18f, 16f, 4f
+        10f, 12f, 25f, 16f, 4f, 8f, 10f, 12f, 18f, 16f, 4f
     )
     var verList = mutableListOf<Int>()
     var verRightList = mutableListOf<Int>()
@@ -83,17 +104,16 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     val percentColor = Color.parseColor("#E84742")
 
     init {
-        val sorted = horDataList.sorted()
-        var count = 0
-        while (true) {
-            val element = count * yUnit
+        val leftDataMax = (horDataList.max()!! + 0.499f).roundToInt()
+        val verLeftNum =
+            if (leftDataMax % yUnit == 0) leftDataMax / yUnit else leftDataMax / yUnit + 1
+        val rightDataMax = (horPercentDataList.max()!! + 0.499f).roundToInt()
+        val verRightNum =
+            if (rightDataMax % yRightUnit == 0) rightDataMax / yRightUnit else rightDataMax / yRightUnit + 1
+        val showNum = verLeftNum.coerceAtLeast(verRightNum)
+        for (i in 0..showNum) {
+            val element = i * yUnit
             verList.add(0, element)
-            if (element >= sorted.last()) {
-                break
-            }
-            count++
-        }
-        for (i in verList.indices) {
             val rightElement = i * yRightUnit
             verRightList.add(0, rightElement)
         }
