@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/progress_background">
+
+        <com.meetsl.sandroidchart.widgets.CircleProgress
+            android:id="@+id/circle_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="48dp"
+            app:date="2019/10"
+            app:dateMarginTop="15dp"
+            app:desc="本月供应商到货率得分90分环比上涨3分，同比上涨1分"
+            app:descMarginTop="12dp"
+            app:innerRadius="80dp"
+            app:location="芜湖市"
+            app:maxProgress="100"
+            app:outerRadius="90dp"
+            app:progressTextSize="50sp"
+            app:progressUnit="分"
+            app:rank_progress="90"
+            app:totalAngle="135" />
+    </FrameLayout>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:onClick="start"
+        android:textSize="16sp"
+        android:layout_gravity="center_horizontal"
+        android:text="@string/start"/>
+</LinearLayout>

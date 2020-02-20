@@ -20,6 +20,7 @@
         <activity android:name=".PieChartDemoActivity" />
         <activity android:name=".HistogramDemoActivity" />
         <activity android:name=".ComplexHistogramDemoActivity" />
+        <activity android:name=".CircleProgressActivity" />
     </application>
 
 </manifest>

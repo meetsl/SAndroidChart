@@ -24,4 +24,8 @@ class MainActivity : AppCompatActivity() {
         startActivity(Intent(this, ComplexHistogramDemoActivity::class.java))
     }
 
+    fun circleProgress(view: View) {
+        startActivity(Intent(this, CircleProgressActivity::class.java))
+    }
+
 }
