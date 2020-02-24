@@ -11,6 +11,7 @@ import java.lang.IllegalArgumentException
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -328,6 +329,9 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     }
 
     private var startX = 0f
+    private var startY = 0f
+    private var lastMoveX = 0f
+    private var lastMoveY = 0f
     private var endX = 0f
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -335,10 +339,19 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             MotionEvent.ACTION_DOWN -> {
                 windowInfo = null
                 startX = event.x
+                startY = event.y
+                lastMoveX = event.x
+                lastMoveY = event.y
                 endX = event.x
             }
             MotionEvent.ACTION_MOVE -> {
                 endX = event.x
+                val endY = event.y
+                val distanceX = abs(endX - lastMoveX)
+                val distanceY = abs(endY - lastMoveY)
+                if (distanceY > distanceX) {
+                    return false
+                }
                 var moveX = (endX - startX) / resources.displayMetrics.density
                 if (maxShowPillarNum < pillarRectList.size) { //没有全部显示
                     //左移、边界判断
@@ -385,6 +398,8 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                     }
                     postInvalidate()
                 }
+                lastMoveX = event.x
+                lastMoveY = event.y
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 endX = event.x
@@ -570,8 +585,10 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             val matchRight = pillarRect.right + horizontalSpace
             if (targetX in matchLeft..matchRight) {
                 val timeText = getHorFormatStr(horList[i])
-                val leftValueText = if (leftFormat == 1) "${leftDataList[i]}" else "${leftDataList[i]}%"
-                val rightValueText = if (rightFormat == 1) "${rightDataList[i]}" else "${rightDataList[i]}%"
+                val leftValueText =
+                    if (leftFormat == 1) "${leftDataList[i]}" else "${leftDataList[i]}%"
+                val rightValueText =
+                    if (rightFormat == 1) "${rightDataList[i]}" else "${rightDataList[i]}%"
                 val valueText = "${descList[0]}:$leftValueText ${descList[1]}:$rightValueText"
                 val arrowPositionX = pillarRect.centerX()
                 val arrowPositionY = pillarRect.top.coerceAtMost(percentPointList[i].y)
