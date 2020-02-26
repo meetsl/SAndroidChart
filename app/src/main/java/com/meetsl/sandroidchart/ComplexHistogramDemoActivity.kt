@@ -23,7 +23,7 @@ class ComplexHistogramDemoActivity : AppCompatActivity() {
             ),
             ChartInfo.VerticalBean(
                 "总金额（万元）",
-                mutableListOf(375f, 625f, 775f, 1200f, 1250f, 2525f, 2500f, 325f, 2525f, 2500f, 325f),
+                mutableListOf(375f, 625f, 0f, 1200f, 1250f, 0f, 2500f, 5f, 300f, 1500f, 325f),
                 500
             )
         )
