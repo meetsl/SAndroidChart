@@ -191,9 +191,9 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                             percentPointList[i - 1].y + (percentPoint.y - percentPointList[preIndex].y) / 6
                         controlAY = controlAY.coerceAtMost(chartRectF.bottom)
                         val controlBX =
-                            percentPoint.x - (percentPointList[nextIndex].x - percentPointList[i - 1].x) /6
+                            percentPoint.x - (percentPointList[nextIndex].x - percentPointList[i - 1].x) / 6
                         var controlBY =
-                            percentPoint.y - (percentPointList[nextIndex].y - percentPointList[i - 1].y) /6
+                            percentPoint.y - (percentPointList[nextIndex].y - percentPointList[i - 1].y) / 6
                         controlBY = controlBY.coerceAtMost(chartRectF.bottom)
                         shadowPath.cubicTo(
                             controlAX,
@@ -424,7 +424,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     private fun typographic() {
         clear()
         val density = context.resources.displayMetrics.density
-        horizontalSpace = 6.5f * density
+        horizontalSpace = 7f * density
         pillarWidth = 10 * density
         val leftDataMax = (leftDataList.max()!! + 0.499f).roundToInt()
         val verLeftNum =
@@ -531,7 +531,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             horTextPosList.add(textY)
             //横坐标年月标识
             //起始和月份或者日为1的标识年或者年月
-            if (horValue.second == 1 || horValue.third == 1) {
+            if ((horFormat == 2 && horValue.second == 1) || (horFormat == 3 && horValue.third == 1)) {
                 val drawText = getHorYearMonthStr(horValue)
                 val item = STriple(textX, textY + 2 * verticalTextSize, drawText)
                 horYearMonthPosList.add(item)
@@ -687,8 +687,14 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                 )
             }
             descList = mutableListOf(chartInfo.left.desc, chartInfo.right.desc)
-            leftDataList = chartInfo.left.datas
-            rightDataList = chartInfo.right.datas
+            val leftSource = chartInfo.left.datas
+            if (leftSource.isNotEmpty()) {
+                leftDataList = leftSource
+            }
+            val rightSource = chartInfo.right.datas
+            if (leftSource.isNotEmpty()) {
+                rightDataList = rightSource
+            }
             yUnit = chartInfo.left.unit
             yRightUnit = chartInfo.right.unit
             chartInfo.left.dataFormat?.let {
@@ -739,4 +745,3 @@ data class ChartInfo(val date: String, val left: VerticalBean, var right: Vertic
         var color: String? = null
     }
 }
-
