@@ -8,6 +8,7 @@ import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
 import java.lang.IllegalArgumentException
+import java.lang.RuntimeException
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -24,17 +25,9 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     private val horList = mutableListOf<Triple<Int, Int, Int>>()
     private var descList = mutableListOf("金额", "占比")
     private var leftDataList: List<Float> =
-        mutableListOf(
-            0f, 0f, 0f, 0f, 0f,
-            0f, 0f, 0f, 0f, 0f,
-            0f, 0f, 0f, 0f, 0f,
-            0f, 0f, 0f, 0f, 0f,
-            0f, 0f, 0f
-        )
-    private var rightDataList: List<Float> = mutableListOf(
-        0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f,
-        0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f
-    )
+        mutableListOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
+    private var rightDataList: List<Float> =
+        mutableListOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
     private val verList = mutableListOf<Int>()
     private val verRightList = mutableListOf<Int>()
     private var verticalSpace = 80f
@@ -44,8 +37,8 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     private var verticalMargin = 40f
     private var descMargin = 60f
     private var textVerticalMargin = 5f
-    private var yUnit = 5
-    private var yRightUnit = 5
+    private var yUnit = 1
+    private var yRightUnit = 1
     private var verticalTextSize = 32f
     private var descTextSize = 38f
     private var descCircleRadius = 12f
@@ -76,19 +69,18 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     private var chartNeedWidth = 0f
     private var chartNeedHeight = 0f
     private var maxShowPillarNum = 12
-    private var startShowPillarX = 0f
-    private var endShowPillarX = 0f
     private var isDrawPillarValue = false
     private var horFormat = 2 // 1: year; 2: month; 3: day;
     private var leftFormat = 1 // 1 数字 2 百分比
     private var rightFormat = 1 // 1 数字 2 百分比
+    private var showType = 1 //1 柱状图 2 折线图 3 折线图&柱状图
     private var year = 2019
     private var month = 8
     private var day = 25
     private var chartRectF = RectF() //坐标矩形位置
     private var windowInfo: SWindowInfo? = null
-    private var pillarColor = Color.parseColor("#3877E1")
-    private var percentColor = Color.parseColor("#E84742")
+    private var leftColor = Color.parseColor("#3877E1")
+    private var rightColor = Color.parseColor("#E84742")
     private var textColor = Color.BLACK
 
     init {
@@ -114,7 +106,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             canvas.translate(dx, 0f)
         }
         //绘制图标描述
-        descPaint.color = pillarColor
+        descPaint.color = leftColor
         val circleY = descTextSize / 3
         canvas.drawCircle(
             chartRectF.left + circleY,
@@ -129,21 +121,23 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             chartRectF.top - descMargin,
             descPaint
         )
-        descPaint.color = percentColor
-        val textWidth = descPaint.measureText(descList[0])
-        canvas.drawCircle(
-            chartRectF.left + 2 * circleY + textVerticalMargin + textWidth + horizontalSpace + circleY,
-            chartRectF.top - descMargin - circleY,
-            descCircleRadius,
-            descPaint
-        )
-        descPaint.color = textColor
-        canvas.drawText(
-            descList[1],
-            chartRectF.left + 2 * circleY + textVerticalMargin + textWidth + horizontalSpace + 2 * circleY + textVerticalMargin,
-            chartRectF.top - descMargin,
-            descPaint
-        )
+        if (showType == 3) {
+            descPaint.color = rightColor
+            val textWidth = descPaint.measureText(descList[0])
+            canvas.drawCircle(
+                chartRectF.left + 2 * circleY + textVerticalMargin + textWidth + horizontalSpace + circleY,
+                chartRectF.top - descMargin - circleY,
+                descCircleRadius,
+                descPaint
+            )
+            descPaint.color = textColor
+            canvas.drawText(
+                descList[1],
+                chartRectF.left + 2 * circleY + textVerticalMargin + textWidth + horizontalSpace + 2 * circleY + textVerticalMargin,
+                chartRectF.top - descMargin,
+                descPaint
+            )
+        }
         //绘制坐标内分隔线
         linePaint.color = Color.RED
         canvas.drawLines(linePosList.toFloatArray(), linePaint)
@@ -151,90 +145,93 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         linePaint.color = Color.BLACK
         canvas.drawLines(coordinateLines.toFloatArray(), linePaint)
         //绘制柱图
-        for (i in pillarRectList.indices) {
-            val pillarRect = pillarRectList[i]
-            val drawX = pillarRect.left
-            if (drawX in startShowPillarX..endShowPillarX)
-                canvas.drawRect(pillarRect, pillarPaint)
-
-        }
-        //绘制折线图
-        shadowPath.reset()
-        linePath.reset()
-        shadowPath.moveTo(chartRectF.left, chartRectF.bottom)
-        linePath.moveTo(chartRectF.left, chartRectF.bottom)
-        var firstFit = true
-        var lastShowIndex = 0
-        for (i in percentPointList.indices) {
-            val percentPoint = percentPointList[i]
-            val pointX = percentPoint.x
-            if (pointX in startShowPillarX..endShowPillarX) {
-                if (i > 0) {
-                    if (firstFit) {
-                        val preHidePoint = percentPointList[i - 1]
-                        val k =
-                            (percentPoint.y - preHidePoint.y) / (percentPoint.x - preHidePoint.x)
-                        val b = percentPoint.y - k * percentPoint.x
-                        val y = k * chartRectF.left + b
-                        shadowPath.lineTo(chartRectF.left, y)
-                        shadowPath.lineTo(percentPoint.x, percentPoint.y)
-                        linePath.moveTo(chartRectF.left, y)
-                        linePath.lineTo(percentPoint.x, percentPoint.y)
-                        firstFit = false
-                    } else {
-                        val preIndex = if (i - 2 < 0) 0 else i - 2
-                        val nextIndex =
-                            if (i + 1 > percentPointList.size - 1) percentPointList.size - 1 else i + 1
-                        val controlAX =
-                            percentPointList[i - 1].x + (percentPoint.x - percentPointList[preIndex].x) / 6
-                        var controlAY =
-                            percentPointList[i - 1].y + (percentPoint.y - percentPointList[preIndex].y) / 6
-                        controlAY = controlAY.coerceAtMost(chartRectF.bottom)
-                        val controlBX =
-                            percentPoint.x - (percentPointList[nextIndex].x - percentPointList[i - 1].x) / 6
-                        var controlBY =
-                            percentPoint.y - (percentPointList[nextIndex].y - percentPointList[i - 1].y) / 6
-                        controlBY = controlBY.coerceAtMost(chartRectF.bottom)
-                        shadowPath.cubicTo(
-                            controlAX,
-                            controlAY,
-                            controlBX,
-                            controlBY,
-                            percentPoint.x,
-                            percentPoint.y
-                        )
-                        linePath.cubicTo(
-                            controlAX,
-                            controlAY,
-                            controlBX,
-                            controlBY,
-                            percentPoint.x,
-                            percentPoint.y
-                        )
-                    }
-                } else {
-                    shadowPath.lineTo(percentPoint.x, percentPoint.y)
-                    linePath.lineTo(percentPoint.x, percentPoint.y)
-                    if (firstFit)
-                        firstFit = false
-                }
-                lastShowIndex = i
+        if (showType == 1 || showType == 3) {
+            for (i in pillarRectList.indices) {
+                val pillarRect = pillarRectList[i]
+                val drawX = pillarRect.left
+                if (drawX in chartRectF.left..chartRectF.right)
+                    canvas.drawRect(pillarRect, pillarPaint)
             }
         }
-        if (lastShowIndex < percentPointList.size - 1) {
-            val percentPoint = percentPointList[lastShowIndex]
-            val nextHidePoint = percentPointList[lastShowIndex + 1]
-            val k = (nextHidePoint.y - percentPoint.y) / (nextHidePoint.x - percentPoint.x)
-            val b = percentPoint.y - k * percentPoint.x
-            val y = k * chartRectF.right + b
-            shadowPath.lineTo(chartRectF.right, y)
-            linePath.lineTo(chartRectF.right, y)
-            shadowPath.lineTo(chartRectF.right, chartRectF.bottom)
-        } else {
-            shadowPath.lineTo(percentPointList[lastShowIndex].x, chartRectF.bottom)
+        //绘制折线图
+        if (showType == 2 || showType == 3) {
+            shadowPath.reset()
+            linePath.reset()
+            shadowPath.moveTo(chartRectF.left, chartRectF.bottom)
+            linePath.moveTo(chartRectF.left, chartRectF.bottom)
+            var firstFit = true
+            var lastShowIndex = 0
+            for (i in percentPointList.indices) {
+                val percentPoint = percentPointList[i]
+                val pointX = percentPoint.x
+                if (pointX in chartRectF.left..chartRectF.right) {
+                    if (i > 0) {
+                        if (firstFit) {
+                            val preHidePoint = percentPointList[i - 1]
+                            val k =
+                                (percentPoint.y - preHidePoint.y) / (percentPoint.x - preHidePoint.x)
+                            val b = percentPoint.y - k * percentPoint.x
+                            val y = k * chartRectF.left + b
+                            shadowPath.lineTo(chartRectF.left, y)
+                            shadowPath.lineTo(percentPoint.x, percentPoint.y)
+                            linePath.moveTo(chartRectF.left, y)
+                            linePath.lineTo(percentPoint.x, percentPoint.y)
+                            firstFit = false
+                        } else {
+                            val preIndex = if (i - 2 < 0) 0 else i - 2
+                            val nextIndex =
+                                if (i + 1 > percentPointList.size - 1) percentPointList.size - 1 else i + 1
+                            val controlAX =
+                                percentPointList[i - 1].x + (percentPoint.x - percentPointList[preIndex].x) / 6
+                            var controlAY =
+                                percentPointList[i - 1].y + (percentPoint.y - percentPointList[preIndex].y) / 6
+                            controlAY = controlAY.coerceAtMost(chartRectF.bottom)
+                            val controlBX =
+                                percentPoint.x - (percentPointList[nextIndex].x - percentPointList[i - 1].x) / 6
+                            var controlBY =
+                                percentPoint.y - (percentPointList[nextIndex].y - percentPointList[i - 1].y) / 6
+                            controlBY = controlBY.coerceAtMost(chartRectF.bottom)
+                            shadowPath.cubicTo(
+                                controlAX,
+                                controlAY,
+                                controlBX,
+                                controlBY,
+                                percentPoint.x,
+                                percentPoint.y
+                            )
+                            linePath.cubicTo(
+                                controlAX,
+                                controlAY,
+                                controlBX,
+                                controlBY,
+                                percentPoint.x,
+                                percentPoint.y
+                            )
+                        }
+                    } else {
+                        shadowPath.lineTo(percentPoint.x, percentPoint.y)
+                        linePath.lineTo(percentPoint.x, percentPoint.y)
+                        if (firstFit)
+                            firstFit = false
+                    }
+                    lastShowIndex = i
+                }
+            }
+            if (lastShowIndex < percentPointList.size - 1) {
+                val percentPoint = percentPointList[lastShowIndex]
+                val nextHidePoint = percentPointList[lastShowIndex + 1]
+                val k = (nextHidePoint.y - percentPoint.y) / (nextHidePoint.x - percentPoint.x)
+                val b = percentPoint.y - k * percentPoint.x
+                val y = k * chartRectF.right + b
+                shadowPath.lineTo(chartRectF.right, y)
+                linePath.lineTo(chartRectF.right, y)
+                shadowPath.lineTo(chartRectF.right, chartRectF.bottom)
+            } else {
+                shadowPath.lineTo(percentPointList[lastShowIndex].x, chartRectF.bottom)
+            }
+            canvas.drawPath(shadowPath, brokenShaderPaint)
+            canvas.drawPath(linePath, brokenLinePaint)
         }
-        canvas.drawPath(shadowPath, brokenShaderPaint)
-        canvas.drawPath(linePath, brokenLinePaint)
         //绘制Y坐标文字
         for (i in 0 until verList.size) {
             val text = if (leftFormat == 1) "${verList[i]}" else "${verList[i]}%"
@@ -244,18 +241,21 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                 verTextPosList[2 * i + 1],
                 textPaint
             )
-            val rightText = if (rightFormat == 1) "${verRightList[i]}" else "${verRightList[i]}%"
-            canvas.drawText(
-                rightText,
-                verRightTextPosList[2 * i],
-                verRightTextPosList[2 * i + 1],
-                textPaint
-            )
+            if (showType == 3) {
+                val rightText =
+                    if (rightFormat == 1) "${verRightList[i]}" else "${verRightList[i]}%"
+                canvas.drawText(
+                    rightText,
+                    verRightTextPosList[2 * i],
+                    verRightTextPosList[2 * i + 1],
+                    textPaint
+                )
+            }
         }
         //绘制X坐标文字
         for (i in horList.indices) {
             val drawX = horTextPosList[i + i * 1]
-            if (drawX in startShowPillarX..endShowPillarX)
+            if (drawX in chartRectF.left..chartRectF.right)
                 canvas.drawText(
                     getHorFormatStr(horList[i]),
                     drawX,
@@ -266,7 +266,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         //绘制横坐标年月标识
         for (i in horYearMonthPosList.indices) {
             val item = horYearMonthPosList[i]
-            if (item.first in startShowPillarX..endShowPillarX) {
+            if (item.first in chartRectF.left..chartRectF.right) {
                 canvas.drawText(item.third, item.first, item.second, textPaint)
             }
         }
@@ -274,7 +274,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         for (i in horList.indices) {
             val drawX = horTextPosList[2 * i]
             val item = horList[i]
-            if (drawX in startShowPillarX..endShowPillarX) {
+            if (drawX in chartRectF.left..chartRectF.right) {
                 canvas.drawText(
                     getHorYearMonthStr(item),
                     drawX,
@@ -284,12 +284,12 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                 break
             }
         }
-        if (isDrawPillarValue) {
+        if (isDrawPillarValue && showType != 2) {
             //绘制x坐标 value文字
             for (i in leftDataList.indices) {
                 val text = if (leftFormat == 1) "${leftDataList[i]}" else "${leftDataList[i]}%"
                 val drawX = horValueTextPosList[2 * i]
-                if (drawX in startShowPillarX..endShowPillarX)
+                if (drawX in chartRectF.left..chartRectF.right)
                     canvas.drawText(
                         text,
                         drawX,
@@ -355,23 +355,28 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                     return false
                 }
                 var moveX = (endX - startX) / resources.displayMetrics.density
-                if (maxShowPillarNum < pillarRectList.size) { //没有全部显示
+                if (maxShowPillarNum < leftDataList.size) { //没有全部显示
+                    val (firstItemX, lastItemX) = if (showType == 2)
+                        Pair(
+                            percentPointList.first().x - pillarWidth / 2,
+                            percentPointList.last().x + pillarWidth / 2
+                        )
+                    else
+                        Pair(pillarRectList.first().left, pillarRectList.last().right)
                     //左移、边界判断
                     if (moveX > 0) {
-                        val first = pillarRectList.first()
-                        val newX = first.left + moveX
-                        val pillarLeftEdgeX = startShowPillarX + horizontalSpace
-                        if (newX > pillarLeftEdgeX) {
-                            moveX = pillarLeftEdgeX - first.left
+                        val newX = firstItemX + moveX
+                        val leftEdgeX = chartRectF.left + horizontalSpace
+                        if (newX > leftEdgeX) {
+                            moveX = leftEdgeX - firstItemX
                         }
                     }
                     //右移、边界判断
                     if (moveX < 0) {
-                        val last = pillarRectList.last()
-                        val newX = last.right + moveX
-                        val pillarRightEdgeX = endShowPillarX - horizontalSpace
-                        if (newX < pillarRightEdgeX) {
-                            moveX = pillarRightEdgeX - last.right
+                        val newX = lastItemX + moveX
+                        val rightEdgeX = chartRectF.right - horizontalSpace
+                        if (newX < rightEdgeX) {
+                            moveX = rightEdgeX - lastItemX
                         }
                     }
                     //更新柱状图位置
@@ -379,6 +384,9 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                         val pillarRect = pillarRectList[i]
                         pillarRect.left += moveX
                         pillarRect.right += moveX
+                    }
+                    //更新折线位置
+                    for (i in percentPointList.indices) {
                         val percentPoint = percentPointList[i]
                         percentPoint.x += moveX
                     }
@@ -458,7 +466,9 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         val maxVerticalTextWidth =
             textPaint.measureText(if (leftFormat == 1) "${verList[0]}" else "${verList[0]}%")
         val maxVerticalRightTextWidth =
-            textPaint.measureText(if (rightFormat == 1) "${verRightList[0]}" else "${verRightList[0]}%")
+            if (showType == 2 || showType == 3)
+                textPaint.measureText(if (rightFormat == 1) "${verRightList[0]}" else "${verRightList[0]}%")
+            else 0f
         val chartLeftMargin = horizontalMargin + maxVerticalTextWidth + 10 //10 文字位置右侧距图标的距离
         windowHeight = verticalTextSize * 2 + textVerticalMargin + 2 * windowPadding
         val chartTopMargin =
@@ -466,8 +476,6 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         val chartWidth =
             leftDataList.size.coerceAtMost(maxShowPillarNum) * (pillarWidth + 2 * horizontalSpace)
         val chartHeight = (verList.size - 1) * verticalSpace
-        startShowPillarX = chartLeftMargin
-        endShowPillarX = startShowPillarX + chartWidth
         chartNeedWidth = chartLeftMargin + chartWidth + maxVerticalRightTextWidth + horizontalMargin
         chartNeedHeight =
             chartTopMargin + verticalMargin + chartHeight + verticalTextSize * 3 + textVerticalMargin
@@ -510,18 +518,20 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         //计算柱状位置和x轴文字文字
         for (i in leftDataList.indices) {
             val left = i * (2 * horizontalSpace + pillarWidth) + horizontalSpace + chartLeftMargin
-            val top =
-                (chartHeight + chartTopMargin) - (leftDataList[i] / yUnit.toFloat()) * verticalSpace
-            val right = left + pillarWidth
-            val bottom = chartTopMargin + chartHeight - 1 //-1不压抽线
-            val rectF = RectF(left, top, right, bottom)
-            pillarRectList.add(rectF)
-            //计算值的文字位置
-            val valueText = if (leftFormat == 1) "${leftDataList[i]}" else "${leftDataList[i]}%"
-            val valueTextX = left + pillarWidth / 2 - textPaint.measureText(valueText) / 2
-            val valueTextY = top - textVerticalMargin
-            horValueTextPosList.add(valueTextX)
-            horValueTextPosList.add(valueTextY)
+            if (showType == 1 || showType == 3) {
+                val top =
+                    (chartHeight + chartTopMargin) - (leftDataList[i] / yUnit.toFloat()) * verticalSpace
+                val right = left + pillarWidth
+                val bottom = chartTopMargin + chartHeight - 1 //-1不压抽线
+                val rectF = RectF(left, top, right, bottom)
+                pillarRectList.add(rectF)
+                //计算值的文字位置
+                val valueText = if (leftFormat == 1) "${leftDataList[i]}" else "${leftDataList[i]}%"
+                val valueTextX = left + pillarWidth / 2 - textPaint.measureText(valueText) / 2
+                val valueTextY = top - textVerticalMargin
+                horValueTextPosList.add(valueTextX)
+                horValueTextPosList.add(valueTextY)
+            }
             //计算 x 轴文字坐标
             val horValue = horList[i]
             val textX =
@@ -536,12 +546,20 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                 val item = STriple(textX, textY + 2 * verticalTextSize, drawText)
                 horYearMonthPosList.add(item)
             }
-            //计算折线点位置
-            //计算折线路径
-            val pointLeft = left + pillarWidth / 2
-            val pointTop =
-                (chartHeight + chartTopMargin) - (rightDataList[i] / yRightUnit.toFloat()) * verticalSpace
-            percentPointList.add(PointF(pointLeft, pointTop))
+            if (showType == 2 || showType == 3) {
+                //计算折线点位置
+                //计算折线路径
+                val pointLeft = left + pillarWidth / 2
+                if (showType == 2) {
+                    val pointTop =
+                        (chartHeight + chartTopMargin) - (leftDataList[i] / yUnit.toFloat()) * verticalSpace
+                    percentPointList.add(PointF(pointLeft, pointTop))
+                } else {
+                    val pointTop =
+                        (chartHeight + chartTopMargin) - (rightDataList[i] / yRightUnit.toFloat()) * verticalSpace
+                    percentPointList.add(PointF(pointLeft, pointTop))
+                }
+            }
         }
     }
 
@@ -551,20 +569,20 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         textPaint.isAntiAlias = true
         descPaint.isAntiAlias = true
         descPaint.textSize = descTextSize
-        pillarPaint.color = pillarColor
+        pillarPaint.color = leftColor
         pillarPaint.isAntiAlias = true
         brokenShaderPaint.shader = LinearGradient(
             0f, chartRectF.top,
             0f, chartRectF.bottom,
-            percentColor, Color.TRANSPARENT, Shader.TileMode.CLAMP
+            rightColor, Color.TRANSPARENT, Shader.TileMode.CLAMP
         )
         brokenShaderPaint.isAntiAlias = true
-        brokenLinePaint.color = percentColor
+        brokenLinePaint.color = rightColor
         brokenLinePaint.isAntiAlias = true
         brokenLinePaint.style = Paint.Style.STROKE
         brokenLinePaint.strokeWidth = 4f
         windowPaint.isAntiAlias = true
-        windowPaint.color = pillarColor
+        windowPaint.color = leftColor
     }
 
     private fun clear() {
@@ -584,27 +602,61 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     }
 
     private fun createDataWindow(targetX: Float) {
-        //计算点击位置所在柱状图
-        for (i in pillarRectList.indices) {
-            val pillarRect = pillarRectList[i]
-            val matchLeft = pillarRect.left - horizontalSpace
-            val matchRight = pillarRect.right + horizontalSpace
+        //计算点击位置所在柱状图或者折线图
+        for (i in leftDataList.indices) {
+            var matchLeft: Float
+            var matchRight: Float
+            var arrowPositionX: Float
+            var arrowPositionY: Float
+            when (showType) {
+                1 -> {
+                    val pillarRect = pillarRectList[i]
+                    matchLeft = pillarRect.left - horizontalSpace
+                    matchRight = pillarRect.right + horizontalSpace
+                    arrowPositionX = pillarRect.centerX()
+                    arrowPositionY = pillarRect.top
+                }
+                2 -> {
+                    val point = percentPointList[i]
+                    matchLeft = point.x - pillarWidth / 2 - horizontalSpace
+                    matchRight = point.x + pillarWidth / 2 + horizontalSpace
+                    arrowPositionX = point.x
+                    arrowPositionY = percentPointList[i].y
+                }
+                else -> {
+                    val pillarRect = pillarRectList[i]
+                    matchLeft = pillarRect.left - horizontalSpace
+                    matchRight = pillarRect.right + horizontalSpace
+                    arrowPositionX = pillarRect.centerX()
+                    arrowPositionY = pillarRect.top.coerceAtMost(percentPointList[i].y)
+                }
+            }
+
             if (targetX in matchLeft..matchRight) {
                 val timeText = getHorFormatStr(horList[i])
-                val leftValueText =
-                    if (leftFormat == 1) "${leftDataList[i]}" else "${leftDataList[i]}%"
-                val rightValueText =
-                    if (rightFormat == 1) "${rightDataList[i]}" else "${rightDataList[i]}%"
-                val valueText = "${descList[0]}:$leftValueText ${descList[1]}:$rightValueText"
-                val arrowPositionX = pillarRect.centerX()
-                val arrowPositionY = pillarRect.top.coerceAtMost(percentPointList[i].y)
+                //如果小数为xxx.0 显示为整数
+                val leftData = leftDataList[i]
+                val leftDataStr =
+                    if ("$leftData".matches(Regex("\\d+\\.0+"))) "${leftData.toInt()}" else "$leftData"
+                val leftValueText = if (leftFormat == 1) leftDataStr else "$leftDataStr%"
+                val valueText = if (showType == 3) {
+                    val rightData = rightDataList[i]
+                    val rightDataStr =
+                        if ("$rightData".matches(Regex("\\d+\\.0+"))) "${rightData.toInt()}" else "$rightData"
+                    val rightValueText = if (rightFormat == 1) rightDataStr else "$rightDataStr%"
+                    "${descList[0]}:$leftValueText ${descList[1]}:$rightValueText"
+                } else {
+                    "${descList[0]}:$leftValueText"
+                }
                 val textWidth = textPaint.measureText(valueText)
                 val windowWidth = textWidth + 2 * windowPadding
-                val overRightX = chartNeedWidth - arrowPositionX - windowWidth / 2 //右边空间是否能放下window
+                val overRightX =
+                    chartNeedWidth - arrowPositionX - windowWidth / 2 //右边空间是否能放下window
                 val translateLeftX = if (overRightX < 0) overRightX else 0f //向左平移距离
                 val overLeftX = arrowPositionX - horizontalMargin - windowWidth / 2
                 val translateRightX = if (overLeftX < 0) -overLeftX else 0f //向右平移距离
-                val windowLeft = arrowPositionX - windowWidth / 2 + translateLeftX + translateRightX
+                val windowLeft =
+                    arrowPositionX - windowWidth / 2 + translateLeftX + translateRightX
                 val windowBottom = arrowPositionY - windowMargin
                 val windowRectF = RectF(
                     windowLeft,
@@ -625,7 +677,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                 }
                 val radialGradient = RadialGradient(
                     windowRectF.centerX(), windowRectF.centerY(), windowRectF.width(),
-                    intArrayOf(pillarColor, Color.TRANSPARENT),
+                    intArrayOf(leftColor, Color.TRANSPARENT),
                     floatArrayOf(0f, 0.8f),
                     Shader.TileMode.CLAMP
                 )
@@ -654,6 +706,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
 
     fun setChartInfo(chartInfo: ChartInfo) {
         try {
+            showType = chartInfo.showType
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val date = dateFormat.parse(chartInfo.date)
             if (date != null) {
@@ -686,28 +739,30 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                     resources.displayMetrics
                 )
             }
-            descList = mutableListOf(chartInfo.left.desc, chartInfo.right.desc)
+            descList = mutableListOf(chartInfo.left.desc, chartInfo.right?.desc ?: "")
             val leftSource = chartInfo.left.datas
             if (leftSource.isNotEmpty()) {
                 leftDataList = leftSource
             }
-            val rightSource = chartInfo.right.datas
-            if (leftSource.isNotEmpty()) {
-                rightDataList = rightSource
-            }
-            yUnit = chartInfo.left.unit
-            yRightUnit = chartInfo.right.unit
+            yUnit = chartInfo.left.unit.coerceAtLeast(1)
             chartInfo.left.dataFormat?.let {
                 leftFormat = it
             }
-            chartInfo.right.dataFormat?.let {
-                rightFormat = it
-            }
             chartInfo.left.color?.let {
-                pillarColor = Color.parseColor(it)
+                leftColor = Color.parseColor(it)
             }
-            chartInfo.right.color?.let {
-                percentColor = Color.parseColor(it)
+            chartInfo.right?.let { right ->
+                val rightSource = right.datas
+                if (leftSource.isNotEmpty()) {
+                    rightDataList = rightSource
+                }
+                yRightUnit = right.unit.coerceAtLeast(1)
+                right.dataFormat?.let {
+                    rightFormat = it
+                }
+                right.color?.let {
+                    rightColor = Color.parseColor(it)
+                }
             }
             typographic()
             requestLayout()
@@ -733,15 +788,30 @@ data class SWindowInfo(
     var isShowing: Boolean = false
 )
 
-data class ChartInfo(val date: String, val left: VerticalBean, var right: VerticalBean) {
-    var showFormat: Int? = null
+/**
+ * showType: 1:柱状图  2:折线图 3:柱状图&折线图
+ */
+data class ChartInfo(
+    val date: String,
+    val left: VerticalBean,
+    var showType: Int = 1,
+    var right: VerticalBean? = null
+) {
+    var showFormat: Int? = null // 1: year; 2: month; 3: day;
     var textColor: String? = null
     var textSize: Float? = null
     var descTextSize: Float? = null
     var verticalSpace: Float? = null
 
+    init {
+        if (showType == 3 && right == null)
+            throw RuntimeException("the right vertical bean cannot be null when the showType of ChartInfo is 3 ")
+        if (right != null)
+            showType = 3
+    }
+
     data class VerticalBean(val desc: String, val datas: List<Float>, val unit: Int) {
-        var dataFormat: Int? = null
-        var color: String? = null
+        var dataFormat: Int? = null // 1:数字 2:百分比
+        var color: String? = null //绘制颜色
     }
 }

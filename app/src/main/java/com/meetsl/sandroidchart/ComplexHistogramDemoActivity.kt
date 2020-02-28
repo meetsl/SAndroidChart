@@ -16,16 +16,18 @@ class ComplexHistogramDemoActivity : AppCompatActivity() {
         setContentView(R.layout.activity_complex_histogram)
         val chartInfo = ChartInfo(
             "2020-02-12",
-            ChartInfo.VerticalBean(
+            left = ChartInfo.VerticalBean(
                 "到货率评价",
-                mutableListOf(15f, 25f, 32f, 48f, 35f, 22f, 45f, 71f, 22f, 45f, 71f),
+                mutableListOf(15.001f, 25f, 32f, 48f, 35f, 22f, 45f, 71f, 22f, 45f, 71f, 22f, 45f, 71f, 22f),
                 10
             ),
-            ChartInfo.VerticalBean(
+            //如果设置了 right，showType可以不设置并且设置为1、2将无效
+            right = ChartInfo.VerticalBean(
                 "总金额（万元）",
-                mutableListOf(375f, 625f, 0f, 1200f, 1250f, 0f, 2500f, 5f, 300f, 1500f, 325f),
+                mutableListOf(375f, 625f, 0f, 1200f, 1250f, 0f, 2500f, 5f, 300f, 1500f, 325f,1200f, 1500f, 325f,1200f),
                 500
-            )
+            ),
+            showType = 3
         )
         chartInfo.verticalSpace = 60f
         chv_view.setChartInfo(chartInfo)
