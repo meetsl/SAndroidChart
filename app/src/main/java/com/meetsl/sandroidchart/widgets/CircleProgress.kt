@@ -11,6 +11,8 @@ import android.view.View
 import android.view.animation.LinearInterpolator
 import com.meetsl.sandroidchart.R
 import kotlin.math.ceil
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * @author : ShiLong
@@ -246,17 +248,18 @@ class CircleProgress(context: Context, attrs: AttributeSet?, defStyleAttr: Int) 
             drawNum,
             moveAngle
         )
-        //画进度
-        drawProgress(
-            drawNum,
-            startAngle,
-            centerX,
-            circleRadius,
-            centerY,
-            canvas,
-            drawCircleRadius,
-            moveAngle
-        )
+        if (progress > 0) {
+            //画进度
+            drawProgress(
+                drawNum, startAngle, centerX, circleRadius,
+                centerY, canvas, drawCircleRadius, moveAngle
+            )
+        } else {
+            //进度为0只画指示点
+            val drawCX = centerX + circleRadius * cos(startAngle.toRadians()).toFloat()
+            val drawCY = centerY - circleRadius * sin(startAngle.toRadians()).toFloat()
+            canvas?.drawCircle(drawCX, drawCY, drawCircleRadius - 2, progressPaint)
+        }
         //画内容
         drawText(canvas, centerX, centerY)
     }
