@@ -30,20 +30,20 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         mutableListOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
     private val verList = mutableListOf<Int>()
     private val verRightList = mutableListOf<Int>()
-    private var verticalSpace = 80f
-    private var horizontalSpace = 30f
-    private var pillarWidth = 40f
-    private var horizontalMargin = 20f
-    private var verticalMargin = 40f
-    private var descMargin = 60f
-    private var textVerticalMargin = 5f
+    private var verticalSpace = 0f
+    private var horizontalSpace = 0f
+    private var pillarWidth = 0f
+    private var horizontalMargin = 0f
+    private var verticalMargin = 0f
+    private var descMargin = 0f
+    private var textVerticalMargin = 0f
+    private var verticalTextSize = 0f
+    private var descTextSize = 0f
+    private var descCircleRadius = 0f
+    private var windowPadding = 0f
+    private var windowMargin = 0f
     private var yUnit = 1
     private var yRightUnit = 1
-    private var verticalTextSize = 32f
-    private var descTextSize = 38f
-    private var descCircleRadius = 12f
-    private val windowPadding = 20f
-    private val windowMargin = 20f
     private var windowHeight = 0f
     private val linePaint = Paint()
     private val brokenShaderPaint = Paint()
@@ -54,7 +54,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     private val shadowPath = Path()
     private val linePath = Path()
     private val arrowPath = Path()
-    private val arrowSize = 20f
+    private var arrowSize = 0f
     private val windowShadowPaint = Paint()
     private val windowPaint = Paint()
     private val linePosList = mutableListOf<Float>()
@@ -432,8 +432,22 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     private fun typographic() {
         clear()
         val density = context.resources.displayMetrics.density
-        horizontalSpace = 7f * density
-        pillarWidth = 10 * density
+        verticalSpace = 22 * density
+        horizontalSpace = 8 * density
+        pillarWidth = 8 * density
+        horizontalMargin = 5 * density
+        verticalMargin = 13 * density
+        descMargin = 20 * density
+        textVerticalMargin = 2 * density
+        arrowSize = 7 * density
+        verticalTextSize =
+            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10f, resources.displayMetrics)
+        descTextSize =
+            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 13f, resources.displayMetrics)
+        descCircleRadius = 4 * density
+        windowPadding = 7 * density
+        windowMargin = 7 * density
+
         val leftDataMax = (leftDataList.max()!! + 0.499f).roundToInt()
         val verLeftNum =
             if (leftDataMax % yUnit == 0) leftDataMax / yUnit else leftDataMax / yUnit + 1
@@ -469,7 +483,8 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             if (showType == 2 || showType == 3)
                 textPaint.measureText(if (rightFormat == 1) "${verRightList[0]}" else "${verRightList[0]}%")
             else 0f
-        val chartLeftMargin = horizontalMargin + maxVerticalTextWidth + 10 //10 文字位置右侧距图标的距离
+        val chartLeftMargin =
+            horizontalMargin + maxVerticalTextWidth + 3 * density //3*density 文字位置右侧距图标的距离
         windowHeight = verticalTextSize * 2 + textVerticalMargin + 2 * windowPadding
         val chartTopMargin =
             (verticalMargin + descTextSize + descMargin).coerceAtLeast(windowHeight + 2 * windowMargin)
@@ -491,7 +506,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             val textY = chartTopMargin + i * verticalSpace + verticalTextSize / 2
             verTextPosList.add(textX)
             verTextPosList.add(textY)
-            val rightTextX = chartLeftMargin + chartWidth + 10
+            val rightTextX = chartLeftMargin + chartWidth + 3*density
             verRightTextPosList.add(rightTextX)
             verRightTextPosList.add(textY)
         }
@@ -580,7 +595,8 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         brokenLinePaint.color = rightColor
         brokenLinePaint.isAntiAlias = true
         brokenLinePaint.style = Paint.Style.STROKE
-        brokenLinePaint.strokeWidth = 4f
+        val density = context.resources.displayMetrics.density
+        brokenLinePaint.strokeWidth = 1.2f * density
         windowPaint.isAntiAlias = true
         windowPaint.color = leftColor
     }
