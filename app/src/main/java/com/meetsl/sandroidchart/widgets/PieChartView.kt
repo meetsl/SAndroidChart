@@ -3,6 +3,7 @@ package com.meetsl.sandroidchart.widgets
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.view.View
 import java.util.concurrent.Executors
 import kotlin.math.*
@@ -14,20 +15,20 @@ import kotlin.math.*
  */
 class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
     View(context, attrs, defStyleAttr) {
-    private var radius = 200f
-    private var strokeWidth = 60f
     private var viewRectF: RectF
     private var mainPaint = Paint()
     private var innerPaint = Paint()
     private var linePaint = Paint()
     private val piePartList = mutableListOf<PiePart>()
     private var piePath = Path()
-    private val percentTextSize = 45f
-    private var descTextSize = 35f
-    //延长斜线的长度
-    private val initLength = 80
+    private var radius = 0f
+    private var strokeWidth = 0f
+    private var percentTextSize = 0f
+    private var descTextSize = 0f
     //水平延长线的长度
-    private val drawHorizontalLineLength = 50
+    private var drawHorizontalLineLength = 0f
+    //延长斜线的长度
+    private var initLength = 0f
     private var centerX = 0f
     private var centerY = 0f
     private var chartViewBound: RectF? = null
@@ -40,6 +41,17 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
     constructor(context: Context) : this(context, null)
 
     init {
+        val density = resources.displayMetrics.density
+        radius = 65 * density
+        strokeWidth = 20 * density
+        percentTextSize =
+            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 14f, resources.displayMetrics)
+        descTextSize =
+            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12f, resources.displayMetrics)
+        //水平延长线的长度
+        drawHorizontalLineLength = 16 * density
+        //延长斜线的长度
+        initLength = 25 * density
         typographic()
         //圆绘制所在矩形位置
         viewRectF = RectF(0f, 0f, 2 * radius, 2 * radius)
@@ -50,9 +62,9 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
         innerPaint.color = Color.RED
         innerPaint.style = Paint.Style.STROKE
         innerPaint.isAntiAlias = true
-        innerPaint.strokeWidth = 3f
+        innerPaint.strokeWidth = density
 
-        linePaint.strokeWidth = 5f
+        linePaint.strokeWidth = 1.5f * density
         linePaint.isAntiAlias = true
     }
 
