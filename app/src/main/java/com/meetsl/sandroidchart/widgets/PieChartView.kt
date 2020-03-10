@@ -19,22 +19,28 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
     private var mainPaint = Paint()
     private var innerPaint = Paint()
     private var linePaint = Paint()
+    private var innerShadowPaint = Paint()
     private val piePartList = mutableListOf<PiePart>()
     private var piePath = Path()
     private var radius = 0f
     private var strokeWidth = 0f
     private var percentTextSize = 0f
     private var descTextSize = 0f
+    private var mInnerText = ""
+
     //水平延长线的长度
     private var drawHorizontalLineLength = 0f
+
     //延长斜线的长度
     private var initLength = 0f
     private var centerX = 0f
     private var centerY = 0f
     private var chartViewBound: RectF? = null
+
     //象限统计计数
     private var descCount = 0
     private val executor = Executors.newFixedThreadPool(3)
+    private var drawInnerText = true
 
     constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
 
@@ -42,12 +48,12 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
 
     init {
         val density = resources.displayMetrics.density
-        radius = 65 * density
-        strokeWidth = 20 * density
+        radius = 60 * density
+        strokeWidth = 25 * density
         percentTextSize =
-            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 14f, resources.displayMetrics)
+            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 13f, resources.displayMetrics)
         descTextSize =
-            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12f, resources.displayMetrics)
+            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 11f, resources.displayMetrics)
         //水平延长线的长度
         drawHorizontalLineLength = 16 * density
         //延长斜线的长度
@@ -66,6 +72,11 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
 
         linePaint.strokeWidth = 1.5f * density
         linePaint.isAntiAlias = true
+
+        innerShadowPaint.color = Color.parseColor("#33000000")
+        innerShadowPaint.isAntiAlias = true
+        innerShadowPaint.strokeWidth = strokeWidth / 6
+        innerShadowPaint.style = Paint.Style.STROKE
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -114,14 +125,45 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                     canvas.drawText(it.desc, it.descTextX, it.descTextY, linePaint)
                 }
             }
-            //绘制内部虚线圆
-            for (i in 1..2) {
-                val left = strokeWidth / 2 + strokeWidth * i
-                val right = 2 * radius - left
-                viewRectF.set(left, left, right, right)
-                drawInner(viewRectF, 30 - (i - 1) * 8)
+            //绘制内圈阴影，立体显示
+            piePath.reset()
+            val shadowLeft = strokeWidth / 2 - innerShadowPaint.strokeWidth / 2
+            val shadowRight = 2 * radius - shadowLeft
+            viewRectF.set(shadowLeft, shadowLeft, shadowRight, shadowRight)
+            piePath.addArc(viewRectF, 0f, 360f)
+            canvas.drawPath(piePath, innerShadowPaint)
+            if (drawInnerText) {
+                linePaint.textSize = percentTextSize
+                linePaint.color = Color.BLACK
+                if (mInnerText.length > 6) { //一行显示六个
+                    val textRawNum = ceil(mInnerText.length / 6.0).toInt()
+                    for (i in 0 until textRawNum) {
+                        val startIndex = i * 6
+                        val endIndex = ((i + 1) * 6).coerceAtMost(mInnerText.length)
+                        val subText = mInnerText.substring(startIndex, endIndex)
+                        val textWidth = linePaint.measureText(subText)
+                        val startX = (2 * radius - textWidth) / 2
+                        val startY = radius - (percentTextSize * textRawNum) / 2 + percentTextSize * (i + 1)
+                        canvas.drawText(subText, startX, startY, linePaint)
+                    }
+                } else {
+                    val textWidth = linePaint.measureText(mInnerText)
+                    val startX = (2 * radius - textWidth) / 2
+                    val startY = radius + percentTextSize / 2
+                    canvas.drawText(mInnerText, startX, startY, linePaint)
+                }
+            } else {
+                piePath.reset()
+                //绘制
+                //绘制内部虚线圆
+                for (i in 1..2) {
+                    val left = strokeWidth / 2 + strokeWidth * i
+                    val right = 2 * radius - left
+                    viewRectF.set(left, left, right, right)
+                    drawInner(viewRectF, 30 - (i - 1) * 8)
+                }
+                canvas.drawPath(piePath, innerPaint)
             }
-            canvas.drawPath(piePath, innerPaint)
         }
         piePath.reset()
         //恢复绘制矩形
@@ -327,12 +369,14 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
         return bound
     }
 
-    fun addPiePart(color: Int, ratio: Float, desc: String) {
+    fun addPiePart(color: Int, ratio: Float, desc: String, innerText: String = "") {
+        mInnerText = innerText
         piePartList.add(PiePart(color, ratio, desc))
         typographic()
     }
 
-    fun addPieParts(list: List<Triple<Int, Float, String>>) {
+    fun addPieParts(list: List<Triple<Int, Float, String>>, innerText: String = "") {
+        mInnerText = innerText
         list.forEach {
             piePartList.add(PiePart(it.first, it.second, it.third))
         }
