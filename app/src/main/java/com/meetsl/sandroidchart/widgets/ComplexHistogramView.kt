@@ -155,10 +155,9 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             )
         }
         //绘制坐标内分隔线
-        linePaint.color = Color.RED
+        linePaint.color = Color.parseColor("#C5C5C5")
         canvas.drawLines(linePosList.toFloatArray(), linePaint)
         //绘制坐标线
-        linePaint.color = Color.BLACK
         canvas.drawLines(coordinateLines.toFloatArray(), linePaint)
         //绘制柱图
         if (showType == 1 || showType == 3) {
@@ -351,7 +350,6 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     private var lastMoveX = 0f
     private var lastMoveY = 0f
     private var endX = 0f
-
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.action) {
@@ -530,7 +528,6 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         coordinateLines.add(chartHeight + chartTopMargin)
         coordinateLines.add(chartLeftMargin + chartWidth)
         coordinateLines.add(chartHeight + chartTopMargin)
-        linePaint.isAntiAlias = true
         //计算柱状位置和x轴文字文字
         for (i in leftDataList.indices) {
             val left = i * (2 * horizontalSpace + pillarWidth) + horizontalSpace + chartLeftMargin
@@ -600,6 +597,9 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         brokenLinePaint.strokeWidth = 1.2f * density
         windowPaint.isAntiAlias = true
         windowPaint.color = leftColor
+
+        linePaint.isAntiAlias = true
+        linePaint.strokeWidth = density
     }
 
     private fun clear() {
@@ -820,7 +820,6 @@ data class SWindowInfo(
 data class ChartInfo(
     val date: String,
     val left: VerticalBean,
-    var showType: Int = 1,
     var right: VerticalBean? = null
 ) {
     var showFormat: Int? = null // 1: year; 2: month; 3: day;
@@ -828,6 +827,7 @@ data class ChartInfo(
     var textSize: Float? = null
     var descTextSize: Float? = null
     var verticalSpace: Float? = null
+    var showType: Int = 1
     var horizontalSpace: Float? = null //柱间隔
     var pillarWidth: Float? = null //柱宽度
     var isDrawPillarValue: Boolean = false //柱顶值显示
