@@ -13,7 +13,7 @@ import kotlin.math.*
  * date: 2020/1/19.
  * desc : default.
  */
-class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
+class NoCorrectPieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
     View(context, attrs, defStyleAttr) {
     private var viewRectF: RectF
     private var mainPaint = Paint()
@@ -27,6 +27,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
     private var percentTextSize = 0f
     private var descTextSize = 0f
     private var mInnerText = ""
+    private var maxDescTextLength = 9.0
 
     //水平延长线的长度
     private var drawHorizontalLineLength = 0f
@@ -51,9 +52,9 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
         radius = 60 * density
         strokeWidth = 25 * density
         percentTextSize =
-            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 13f, resources.displayMetrics)
-        descTextSize =
             TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 11f, resources.displayMetrics)
+        descTextSize =
+            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 13f, resources.displayMetrics)
         //水平延长线的长度
         drawHorizontalLineLength = 16 * density
         //延长斜线的长度
@@ -108,7 +109,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                 piePath.addArc(viewRectF, it.startAngle, it.sweepAngle)
                 canvas.drawPath(piePath, mainPaint)
                 piePath.reset()
-                //绘制desc内容
+                //绘制内容
                 linePaint.color = it.color
                 if (it.dStartPoint != null && it.dMiddlePoint != null && it.dEndPoint != null) {
                     canvas.drawLine(
@@ -119,10 +120,34 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                         it.dMiddlePoint!!.x, it.dMiddlePoint!!.y,
                         it.dEndPoint!!.x, it.dEndPoint!!.y, linePaint
                     )
+                    //绘制desc内容
+                    linePaint.textSize = descTextSize
+                    val descText = it.desc
+                    if (descText.length > maxDescTextLength) {
+                        val textRawNum = ceil(descText.length / maxDescTextLength).toInt()
+                        for (i in 0 until textRawNum) {
+                            val startIndex = i * maxDescTextLength.toInt()
+                            val endIndex =
+                                ((i + 1) * maxDescTextLength.toInt()).coerceAtMost(descText.length)
+                            val subText = descText.substring(startIndex, endIndex)
+                            val startX = it.descTextX
+                            val startY = it.descTextY + i * descTextSize
+                            canvas.drawText(subText, startX, startY, linePaint)
+                        }
+                        //绘制百分比
+                        linePaint.textSize = percentTextSize
+                        canvas.drawText(
+                            it.percentText,
+                            it.percentTextX,
+                            it.descTextY + (textRawNum - 1) * descTextSize + percentTextSize,
+                            linePaint
+                        )
+                    } else {
+                        canvas.drawText(it.desc, it.descTextX, it.descTextY, linePaint)
+                    }
+                    //绘制百分比
                     linePaint.textSize = percentTextSize
                     canvas.drawText(it.percentText, it.percentTextX, it.percentTextY, linePaint)
-                    linePaint.textSize = descTextSize
-                    canvas.drawText(it.desc, it.descTextX, it.descTextY, linePaint)
                 }
             }
             //绘制内圈阴影，立体显示
@@ -133,7 +158,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
             piePath.addArc(viewRectF, 0f, 360f)
             canvas.drawPath(piePath, innerShadowPaint)
             if (drawInnerText) {
-                linePaint.textSize = percentTextSize
+                linePaint.textSize = descTextSize
                 linePaint.color = Color.BLACK
                 if (mInnerText.length > 6) { //一行显示六个
                     val textRawNum = ceil(mInnerText.length / 6.0).toInt()
@@ -143,13 +168,14 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                         val subText = mInnerText.substring(startIndex, endIndex)
                         val textWidth = linePaint.measureText(subText)
                         val startX = (2 * radius - textWidth) / 2
-                        val startY = radius - (percentTextSize * textRawNum) / 2 + percentTextSize * (i + 1)
+                        val startY =
+                            radius - (descTextSize * textRawNum) / 2 + descTextSize * (i + 1)
                         canvas.drawText(subText, startX, startY, linePaint)
                     }
                 } else {
                     val textWidth = linePaint.measureText(mInnerText)
                     val startX = (2 * radius - textWidth) / 2
-                    val startY = radius + percentTextSize / 2
+                    val startY = radius + descTextSize / 2
                     canvas.drawText(mInnerText, startX, startY, linePaint)
                 }
             } else {
@@ -202,7 +228,6 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                 }
             }
             //计算绘制描述内容位置
-            // 象限的遍历，5代表在坐标轴上
             for (i in 1..5) {
                 descCount = 0
                 val unCorrectPiePartList =
@@ -222,8 +247,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                     //延伸线段
                     val tempMiddleX = cos(coorAngle).toFloat() * (radius + initLength) + radius
                     val tempMiddleY = sin(coorAngle).toFloat() * (radius + initLength) + radius
-                    it.dMiddlePoint =
-                        correctDescRectF(PointF(tempMiddleX, tempMiddleY), it.quadrant)
+                    it.dMiddlePoint = PointF(tempMiddleX, tempMiddleY)
                     val endPointX: Float
                     val endPointY: Float
                     if (it.quadrant == 1 || it.quadrant == 4) {
@@ -252,24 +276,34 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                     val dotIndex = percentText.indexOf('.')
                     if (dotIndex > 0) {
                         val dotNum = percentText.substring(dotIndex).length
-                        it.percentText = "${percentText.substring(0, dotIndex + min(dotNum, 3))}%"
+                        it.percentText = "占比${percentText.substring(0, dotIndex + min(dotNum, 3))}%"
                     }
                     linePaint.textSize = percentTextSize
                     val percentTextWidth = linePaint.measureText(it.percentText)
                     linePaint.textSize = descTextSize
-                    val descTextWidth = linePaint.measureText(it.desc)
-                    val (percentX, descX) =
+                    val maxSubDescText =
+                        it.desc.substring(0, it.desc.length.coerceAtMost(maxDescTextLength.toInt()))
+                    val descTextWidth = linePaint.measureText(maxSubDescText)
+                    val (descX, percentX) =
                         if (it.quadrant == 1 || it.quadrant == 4)
                             Pair(it.dEndPoint!!.x, it.dEndPoint!!.x)
                         else
                             Pair(
-                                it.dEndPoint!!.x - percentTextWidth,
-                                it.dEndPoint!!.x - descTextWidth
+                                it.dEndPoint!!.x - descTextWidth,
+                                it.dEndPoint!!.x - percentTextWidth
                             )
-                    it.percentTextX = percentX
                     it.descTextX = descX
-                    it.percentTextY = it.dEndPoint!!.y
-                    it.descTextY = it.dEndPoint!!.y + descTextSize
+                    it.percentTextX = percentX
+                    it.descTextY = it.dEndPoint!!.y
+                    it.percentTextY = it.dEndPoint!!.y + percentTextSize
+                    val descText = it.desc
+                    if (descText.length > maxDescTextLength) {
+                        val textRawNum = ceil(descText.length / maxDescTextLength).toInt()
+                        it.percentTextY =
+                            it.descTextY + (textRawNum - 1) * descTextSize + percentTextSize
+                    } else {
+                        it.percentTextY = it.dEndPoint!!.y + percentTextSize
+                    }
                 }
             }
             chartViewBound = getPieChartViewBound()
@@ -288,53 +322,6 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
             val startAngle = sweepAngle * 2 * i
             piePath.addArc(rectF, startAngle, sweepAngle)
         }
-    }
-
-    private fun correctDescRectF(pointF: PointF, quadrant: Int): PointF {
-        //x,y轴上情况的的处理
-        if (quadrant == 5) {
-            return pointF
-        }
-        //象限起始边界位置冲突描述修正，1、2象限下移避免交集
-        if (descCount == 0 && (quadrant == 1 || quadrant == 2)) {
-            val k = (pointF.y - radius) / (pointF.x - radius)
-            if ((k * 1000000).toInt() != 0) { //精度的处理，判断是否是坐标上
-                val b = radius - k * radius
-                pointF.y = pointF.y + (percentTextSize - descTextSize)
-                pointF.x = (pointF.y - b) / k
-            }
-            return pointF
-        }
-        //判断是否有碰撞的描述块，避让纠正位置
-        val correctPiePartQuadrantList =
-            piePartList.filter { it.quadrant == quadrant && it.dEndPoint != null }
-                .sortedBy {
-                    // 1、3象限角度正序计算描述位置 2、4象限倒序计算描述位置
-                    if (it.quadrant == 1 || it.quadrant == 3)
-                        it.startAngle
-                    else
-                        -it.startAngle
-                }
-        correctPiePartQuadrantList.forEach {
-            val k = (pointF.y - radius) / (pointF.x - radius)
-            val b = radius - k * radius
-            if (it.quadrant == 1 || it.quadrant == 2) {
-                val targetPos = pointF.y - percentTextSize
-                val minus = targetPos - it.descTextY
-                if (minus <= 0) {
-                    pointF.y = pointF.y - minus
-                }
-            }
-            if (it.quadrant == 3 || it.quadrant == 4) {
-                val targetPos = pointF.y + descTextSize
-                val minus = targetPos - (it.percentTextY - percentTextSize)
-                if (minus >= 0) {
-                    pointF.y = pointF.y - minus
-                }
-            }
-            pointF.x = (pointF.y - b) / k
-        }
-        return pointF
     }
 
     /**
@@ -370,14 +357,56 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
         return bound
     }
 
-    fun addPiePart(color: Int, ratio: Float, desc: String, innerText: String = "") {
+    fun addPiePart(
+        color: Int,
+        ratio: Float,
+        desc: String,
+        innerText: String = "",
+        maxDescLength: Int = 8
+    ) {
         mInnerText = innerText
+        maxDescTextLength = maxDescLength.toDouble()
         piePartList.add(PiePart(color, ratio, desc))
         typographic()
     }
 
-    fun addPieParts(list: List<Triple<Int, Float, String>>, innerText: String = "") {
+    fun addPieParts(
+        list: List<Triple<Int, Float, String>>,
+        innerText: String = "",
+        maxDescLength: Int = 8
+    ) {
         mInnerText = innerText
+        maxDescTextLength = maxDescLength.toDouble()
+        list.forEach {
+            piePartList.add(PiePart(it.first, it.second, it.third))
+        }
+        typographic()
+    }
+
+    fun setChartInfo(
+        list: List<Triple<Int, Float, String>>,
+        radius: Int = 60,
+        circleWidth: Int = 25,
+        descTextSize: Float = 13f,
+        percentTextSize: Float = 11f,
+        innerText: String = "",
+        maxDescLength: Int = 8
+    ) {
+        val density = resources.displayMetrics.density
+        this.radius = radius * density
+        this.strokeWidth = circleWidth * density
+        this.descTextSize = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_SP,
+            descTextSize,
+            resources.displayMetrics
+        )
+        this.percentTextSize = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_SP,
+            percentTextSize,
+            resources.displayMetrics
+        )
+        mInnerText = innerText
+        maxDescTextLength = maxDescLength.toDouble()
         list.forEach {
             piePartList.add(PiePart(it.first, it.second, it.third))
         }

@@ -30,5 +30,32 @@ class ComplexHistogramDemoActivity : AppCompatActivity() {
             showType = 3
         )
         chv_view.setChartInfo(chartInfo)
+
+
+        val chartInfo1 = ChartInfo(
+            "2020-02-12",
+            left = ChartInfo.VerticalBean(
+                "到货率评价",
+                mutableListOf(15.001f, 25f, 32f, 48f, 35f, 22f),
+                10
+            ),
+            showType = 1
+        )
+        chartInfo1.isDrawPillarValue = true
+        chartInfo1.maxShowPillarNum = 6
+        chartInfo1.pillarWidth = 15f
+        chartInfo1.horizontalSpace = 15f
+        chv_view1.setChartInfo(chartInfo1)
+
+        val chartInfo2 = ChartInfo(
+            "2020-02-12",
+            left = ChartInfo.VerticalBean(
+                "到货率评价",
+                mutableListOf(15.001f, 25f, 32f, 48f, 35f, 22f, 45f, 71f, 22f, 45f, 71f, 22f),
+                10
+            ),
+            showType = 2
+        )
+        chv_view2.setChartInfo(chartInfo2)
     }
 }

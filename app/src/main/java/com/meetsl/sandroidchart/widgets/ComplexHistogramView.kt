@@ -84,6 +84,22 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     private var textColor = Color.BLACK
 
     init {
+        val density = context.resources.displayMetrics.density
+        verticalSpace = 22 * density
+        horizontalSpace = 8 * density
+        pillarWidth = 8 * density
+        horizontalMargin = 5 * density
+        verticalMargin = 13 * density
+        descMargin = 20 * density
+        textVerticalMargin = 2 * density
+        arrowSize = 7 * density
+        verticalTextSize =
+            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10f, resources.displayMetrics)
+        descTextSize =
+            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 13f, resources.displayMetrics)
+        descCircleRadius = 4 * density
+        windowPadding = 7 * density
+        windowMargin = 7 * density
         typographic()
     }
 
@@ -335,6 +351,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     private var lastMoveX = 0f
     private var lastMoveY = 0f
     private var endX = 0f
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.action) {
@@ -431,23 +448,6 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
 
     private fun typographic() {
         clear()
-        val density = context.resources.displayMetrics.density
-        verticalSpace = 22 * density
-        horizontalSpace = 8 * density
-        pillarWidth = 8 * density
-        horizontalMargin = 5 * density
-        verticalMargin = 13 * density
-        descMargin = 20 * density
-        textVerticalMargin = 2 * density
-        arrowSize = 7 * density
-        verticalTextSize =
-            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 10f, resources.displayMetrics)
-        descTextSize =
-            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 13f, resources.displayMetrics)
-        descCircleRadius = 4 * density
-        windowPadding = 7 * density
-        windowMargin = 7 * density
-
         val leftDataMax = (leftDataList.max()!! + 0.499f).roundToInt()
         val verLeftNum =
             if (leftDataMax % yUnit == 0) leftDataMax / yUnit else leftDataMax / yUnit + 1
@@ -483,6 +483,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             if (showType == 2 || showType == 3)
                 textPaint.measureText(if (rightFormat == 1) "${verRightList[0]}" else "${verRightList[0]}%")
             else 0f
+        val density = context.resources.displayMetrics.density
         val chartLeftMargin =
             horizontalMargin + maxVerticalTextWidth + 3 * density //3*density 文字位置右侧距图标的距离
         windowHeight = verticalTextSize * 2 + textVerticalMargin + 2 * windowPadding
@@ -506,7 +507,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             val textY = chartTopMargin + i * verticalSpace + verticalTextSize / 2
             verTextPosList.add(textX)
             verTextPosList.add(textY)
-            val rightTextX = chartLeftMargin + chartWidth + 3*density
+            val rightTextX = chartLeftMargin + chartWidth + 3 * density
             verRightTextPosList.add(rightTextX)
             verRightTextPosList.add(textY)
         }
@@ -735,9 +736,18 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             chartInfo.showFormat?.let {
                 horFormat = it
             }
+            val density = context.resources.displayMetrics.density
             chartInfo.verticalSpace?.let {
-                verticalSpace = it
+                this.verticalSpace = it * density
             }
+            chartInfo.pillarWidth?.let {
+                this.pillarWidth = it * density
+            }
+            chartInfo.horizontalSpace?.let {
+                this.horizontalSpace = it * density
+            }
+            this.isDrawPillarValue = chartInfo.isDrawPillarValue
+            this.maxShowPillarNum = chartInfo.maxShowPillarNum
             chartInfo.textColor?.let {
                 textColor = Color.parseColor(it)
             }
@@ -818,6 +828,10 @@ data class ChartInfo(
     var textSize: Float? = null
     var descTextSize: Float? = null
     var verticalSpace: Float? = null
+    var horizontalSpace: Float? = null //柱间隔
+    var pillarWidth: Float? = null //柱宽度
+    var isDrawPillarValue: Boolean = false //柱顶值显示
+    var maxShowPillarNum = 12
 
     init {
         if (showType == 3 && right == null)
