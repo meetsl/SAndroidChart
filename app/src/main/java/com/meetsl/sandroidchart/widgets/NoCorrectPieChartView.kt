@@ -15,7 +15,7 @@ import kotlin.math.*
  */
 class NoCorrectPieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
     View(context, attrs, defStyleAttr) {
-    private var viewRectF: RectF
+    private lateinit var viewRectF: RectF
     private var mainPaint = Paint()
     private var innerPaint = Paint()
     private var linePaint = Paint()
@@ -60,11 +60,8 @@ class NoCorrectPieChartView(context: Context, attrs: AttributeSet?, defStyleAttr
         //延长斜线的长度
         initLength = 25 * density
         typographic()
-        //圆绘制所在矩形位置
-        viewRectF = RectF(0f, 0f, 2 * radius, 2 * radius)
         mainPaint.style = Paint.Style.STROKE
         mainPaint.isAntiAlias = true
-        mainPaint.strokeWidth = strokeWidth
 
         innerPaint.color = Color.RED
         innerPaint.style = Paint.Style.STROKE
@@ -76,7 +73,6 @@ class NoCorrectPieChartView(context: Context, attrs: AttributeSet?, defStyleAttr
 
         innerShadowPaint.color = Color.parseColor("#33000000")
         innerShadowPaint.isAntiAlias = true
-        innerShadowPaint.strokeWidth = strokeWidth / 6
         innerShadowPaint.style = Paint.Style.STROKE
     }
 
@@ -200,6 +196,10 @@ class NoCorrectPieChartView(context: Context, attrs: AttributeSet?, defStyleAttr
      * 绘制排版
      */
     private fun typographic() {
+        mainPaint.strokeWidth = strokeWidth
+        innerShadowPaint.strokeWidth = strokeWidth / 6
+        //圆绘制所在矩形位置
+        viewRectF = RectF(0f, 0f, 2 * radius, 2 * radius)
         executor.submit {
             //计算总角度
             var totalPart = 0f
