@@ -82,6 +82,8 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     private var leftColor = Color.parseColor("#3877E1")
     private var rightColor = Color.parseColor("#E84742")
     private var textColor = Color.BLACK
+    private var lineColor = Color.parseColor("#C5C5C5")
+    private val intRegex = Regex("\\d+\\.0+")
 
     init {
         val density = context.resources.displayMetrics.density
@@ -155,7 +157,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             )
         }
         //绘制坐标内分隔线
-        linePaint.color = Color.parseColor("#C5C5C5")
+        linePaint.color = lineColor
         canvas.drawLines(linePosList.toFloatArray(), linePaint)
         //绘制坐标线
         canvas.drawLines(coordinateLines.toFloatArray(), linePaint)
@@ -302,7 +304,9 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
         if (isDrawPillarValue && showType != 2) {
             //绘制x坐标 value文字
             for (i in leftDataList.indices) {
-                val text = if (leftFormat == 1) "${leftDataList[i]}" else "${leftDataList[i]}%"
+                val leftData = leftDataList[i]
+                val leftDataStr = if ("$leftData".matches(intRegex)) "${leftData.toInt()}" else "$leftData"
+                val text = if (leftFormat == 1) leftDataStr else "${leftDataStr}%"
                 val drawX = horValueTextPosList[2 * i]
                 if (drawX in chartRectF.left..chartRectF.right)
                     canvas.drawText(
@@ -350,6 +354,7 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
     private var lastMoveX = 0f
     private var lastMoveY = 0f
     private var endX = 0f
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.action) {
@@ -539,7 +544,9 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                 val rectF = RectF(left, top, right, bottom)
                 pillarRectList.add(rectF)
                 //计算值的文字位置
-                val valueText = if (leftFormat == 1) "${leftDataList[i]}" else "${leftDataList[i]}%"
+                val leftData = leftDataList[i]
+                val leftDataStr = if ("$leftData".matches(intRegex)) "${leftData.toInt()}" else "$leftData"
+                val valueText = if (leftFormat == 1) leftDataStr else "${leftDataStr}%"
                 val valueTextX = left + pillarWidth / 2 - textPaint.measureText(valueText) / 2
                 val valueTextY = top - textVerticalMargin
                 horValueTextPosList.add(valueTextX)
@@ -653,13 +660,11 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
                 val timeText = getHorFormatStr(horList[i])
                 //如果小数为xxx.0 显示为整数
                 val leftData = leftDataList[i]
-                val leftDataStr =
-                    if ("$leftData".matches(Regex("\\d+\\.0+"))) "${leftData.toInt()}" else "$leftData"
+                val leftDataStr = if ("$leftData".matches(intRegex)) "${leftData.toInt()}" else "$leftData"
                 val leftValueText = if (leftFormat == 1) leftDataStr else "$leftDataStr%"
                 val valueText = if (showType == 3) {
                     val rightData = rightDataList[i]
-                    val rightDataStr =
-                        if ("$rightData".matches(Regex("\\d+\\.0+"))) "${rightData.toInt()}" else "$rightData"
+                    val rightDataStr = if ("$rightData".matches(intRegex)) "${rightData.toInt()}" else "$rightData"
                     val rightValueText = if (rightFormat == 1) rightDataStr else "$rightDataStr%"
                     "${descList[0]}:$leftValueText ${descList[1]}:$rightValueText"
                 } else {
@@ -751,6 +756,9 @@ class ComplexHistogramView(context: Context, attrs: AttributeSet?, defStyleAttr:
             chartInfo.textColor?.let {
                 textColor = Color.parseColor(it)
             }
+            chartInfo.lineColor?.let {
+                lineColor = Color.parseColor(it)
+            }
             chartInfo.textSize?.let {
                 verticalTextSize = TypedValue.applyDimension(
                     TypedValue.COMPLEX_UNIT_SP,
@@ -824,6 +832,7 @@ data class ChartInfo(
 ) {
     var showFormat: Int? = null // 1: year; 2: month; 3: day;
     var textColor: String? = null
+    var lineColor: String? = null
     var textSize: Float? = null
     var descTextSize: Float? = null
     var verticalSpace: Float? = null
