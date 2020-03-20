@@ -43,6 +43,9 @@ class NoCorrectPieChartView(context: Context, attrs: AttributeSet?, defStyleAttr
     private val executor = Executors.newFixedThreadPool(3)
     private var drawInnerText = true
 
+    //小数位数
+    private var dotNum = 1
+
     constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
 
     constructor(context: Context) : this(context, null)
@@ -275,8 +278,9 @@ class NoCorrectPieChartView(context: Context, attrs: AttributeSet?, defStyleAttr
                     val percentText = "${it.percent * 100}"
                     val dotIndex = percentText.indexOf('.')
                     if (dotIndex > 0) {
-                        val dotNum = percentText.substring(dotIndex).length
-                        it.percentText = "占比${percentText.substring(0, dotIndex + min(dotNum, 3))}%"
+                        val zeroNum = percentText.substring(dotIndex + 1).length
+                        it.percentText =
+                            "${percentText.substring(0, dotIndex + min(zeroNum, dotNum) + 1)}%"
                     }
                     linePaint.textSize = percentTextSize
                     val percentTextWidth = linePaint.measureText(it.percentText)
@@ -390,7 +394,8 @@ class NoCorrectPieChartView(context: Context, attrs: AttributeSet?, defStyleAttr
         descTextSize: Float = 13f,
         percentTextSize: Float = 11f,
         innerText: String = "",
-        maxDescLength: Int = 8
+        maxDescLength: Int = 8,
+        roundNum: Int = 1
     ) {
         val density = resources.displayMetrics.density
         this.radius = radius * density
@@ -405,6 +410,7 @@ class NoCorrectPieChartView(context: Context, attrs: AttributeSet?, defStyleAttr
             percentTextSize,
             resources.displayMetrics
         )
+        this.dotNum = roundNum
         mInnerText = innerText
         maxDescTextLength = maxDescLength.toDouble()
         list.forEach {
