@@ -20,10 +20,10 @@ class PieChartDemoActivity : AppCompatActivity() {
 
     fun addParts(view: View) {
         val list = mutableListOf<Triple<Int, Float, String>>()
-        list.add(Triple(Color.YELLOW, 1f, "20-30岁20-30岁"))
-        list.add(Triple(Color.WHITE, 1f, "30-40岁30-40岁"))
-        list.add(Triple(Color.RED, 1f, "40-50岁40-50岁"))
-        pcv_view.setChartInfo(list, radius = 40, roundNum = 2)
+        list.add(Triple(Color.YELLOW, 98.8f, "20-30岁20-30岁"))
+        list.add(Triple(Color.WHITE, 0.2f, "30-40岁30-40岁"))
+        list.add(Triple(Color.RED, 0.0f, "40-50岁40-50岁"))
+        pcv_view.setChartInfo(list, radius = 40, roundNum = 100)
     }
 
     fun clearParts(view: View) {

@@ -279,8 +279,8 @@ class NoCorrectPieChartView(context: Context, attrs: AttributeSet?, defStyleAttr
                     val dotIndex = percentText.indexOf('.')
                     if (dotIndex > 0) {
                         val zeroNum = percentText.substring(dotIndex + 1).length
-                        it.percentText =
-                            "${percentText.substring(0, dotIndex + min(zeroNum, dotNum) + 1)}%"
+                        val endIndex = dotIndex + if (dotNum > 0) min(zeroNum, dotNum) + 1 else 0
+                        it.percentText = "${percentText.substring(0, endIndex)}%"
                     }
                     linePaint.textSize = percentTextSize
                     val percentTextWidth = linePaint.measureText(it.percentText)
