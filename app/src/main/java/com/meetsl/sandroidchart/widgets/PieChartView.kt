@@ -53,14 +53,12 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
         val density = resources.displayMetrics.density
         radius = 60 * density
         strokeWidth = 25 * density
-        percentTextSize =
-            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 13f, resources.displayMetrics)
-        descTextSize =
-            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 11f, resources.displayMetrics)
+        percentTextSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 13f, resources.displayMetrics)
+        descTextSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 11f, resources.displayMetrics)
         //水平延长线的长度
         drawHorizontalLineLength = 16 * density
         //延长斜线的长度
-        initLength = 25 * density
+        initLength = 20 * density
         typographic()
         mainPaint.style = Paint.Style.STROKE
         mainPaint.isAntiAlias = true
@@ -142,7 +140,8 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                         val subText = mInnerText.substring(startIndex, endIndex)
                         val textWidth = linePaint.measureText(subText)
                         val startX = (2 * radius - textWidth) / 2
-                        val startY = radius - (percentTextSize * textRawNum) / 2 + percentTextSize * (i + 1)
+                        val startY =
+                            radius - (percentTextSize * textRawNum) / 2 + percentTextSize * (i + 1)
                         canvas.drawText(subText, startX, startY, linePaint)
                     }
                 } else {
@@ -201,12 +200,17 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                     angle > 90f && angle < 180f -> 2
                     angle > 180f && angle < 270f -> 3
                     angle > 270f && angle < 360f -> 4
-                    else -> 5 //象限边界
+                    angle == 0f || angle == 360f -> 5 // +x 边界
+                    angle == 180f -> 6 //-x限边界
+                    angle == 90f -> 7 // +y 限边界
+                    else -> 8 // -y 边界
                 }
             }
+            var maxY = 0f //绘制最大Y
+            var minY = 0f //绘制最小Y
             //计算绘制描述内容位置
-            // 象限的遍历，5代表在坐标轴上
-            for (i in 1..5) {
+            // 象限的遍历，5,6,7,8代表在坐标轴上
+            for (i in 1..8) {
                 descCount = 0
                 val unCorrectPiePartList =
                     piePartList.filter { it.quadrant == i && it.dEndPoint == null }
@@ -217,62 +221,72 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                             else
                                 -it.startAngle
                         }
-                unCorrectPiePartList.forEach {
-                    val coorAngle = ((it.startAngle + it.sweepAngle / 2) * Math.PI) / 180
-                    val x = cos(coorAngle).toFloat() * radius + radius
-                    val y = sin(coorAngle).toFloat() * radius + radius
-                    it.dStartPoint = PointF(x, y)
+                for (index in unCorrectPiePartList.indices) {
+                    val piePart = unCorrectPiePartList[index]
+                    val coorAngle = ((piePart.startAngle + piePart.sweepAngle / 2) * Math.PI) / 180
+                    val x = cos(coorAngle).toFloat() * (radius + strokeWidth / 2) + radius
+                    val y = sin(coorAngle).toFloat() * (radius + strokeWidth / 2) + radius
+                    piePart.dStartPoint = PointF(x, y)
                     //延伸线段
-                    val tempMiddleX = cos(coorAngle).toFloat() * (radius + initLength) + radius
-                    val tempMiddleY = sin(coorAngle).toFloat() * (radius + initLength) + radius
-                    it.dMiddlePoint =
-                        correctDescRectF(PointF(tempMiddleX, tempMiddleY), it.quadrant)
+                    val tempMiddleX = cos(coorAngle).toFloat() * (radius + strokeWidth / 2 + initLength) + radius
+                    val tempMiddleY = sin(coorAngle).toFloat() * (radius + strokeWidth / 2 + initLength) + radius
+                    val frontPirPart = if (index > 0) unCorrectPiePartList[index - 1] else null
+                    piePart.dMiddlePoint = correctDescRectF(PointF(tempMiddleX, tempMiddleY), piePart.quadrant, frontPirPart)
                     val endPointX: Float
-                    val endPointY: Float
-                    if (it.quadrant == 1 || it.quadrant == 4) {
-                        endPointX = it.dMiddlePoint!!.x + drawHorizontalLineLength
-                        endPointY = it.dMiddlePoint!!.y
+                    var endPointY: Float
+                    if (piePart.quadrant == 1 || piePart.quadrant == 4) {
+                        endPointX = piePart.dMiddlePoint!!.x + drawHorizontalLineLength
+                        endPointY = piePart.dMiddlePoint!!.y
                     } else {
-                        if (it.dStartPoint!!.x == it.dMiddlePoint!!.x) {
+                        if (piePart.dStartPoint!!.x == piePart.dMiddlePoint!!.x) {
                             // y 轴上竖直延伸
-                            if (it.dStartPoint!!.y > it.dMiddlePoint!!.y) {
-                                endPointX = it.dMiddlePoint!!.x
-                                endPointY = it.dMiddlePoint!!.y - drawHorizontalLineLength
+                            if (piePart.dStartPoint!!.y > piePart.dMiddlePoint!!.y) {
+                                endPointX = piePart.dMiddlePoint!!.x
+                                endPointY = piePart.dMiddlePoint!!.y - drawHorizontalLineLength
                             } else {
-                                endPointX = it.dMiddlePoint!!.x
-                                endPointY = it.dMiddlePoint!!.y + drawHorizontalLineLength
+                                endPointX = piePart.dMiddlePoint!!.x
+                                endPointY = piePart.dMiddlePoint!!.y + drawHorizontalLineLength
                             }
                         } else {
-                            endPointX = it.dMiddlePoint!!.x - drawHorizontalLineLength
-                            endPointY = it.dMiddlePoint!!.y
+                            endPointX = piePart.dMiddlePoint!!.x - drawHorizontalLineLength
+                            endPointY = piePart.dMiddlePoint!!.y
                         }
                     }
-                    it.dEndPoint = PointF(endPointX, endPointY)
-
+                    //对Y象限显示修正
+                    if (piePart.quadrant == 7 && endPointY < maxY) {
+                        endPointY = maxY + percentTextSize
+                    }
+                    if (piePart.quadrant == 8 && endPointY > minY) {
+                        endPointY = minY - descTextSize
+                    }
+                    if (endPointY > maxY) {
+                        maxY = endPointY + descTextSize
+                    }
+                    if (endPointY < minY) {
+                        minY = endPointY - percentTextSize
+                    }
+                    piePart.dEndPoint = PointF(endPointX, endPointY)
                     descCount++
                     //文字位置
-                    val percentText = "${it.percent * 100}"
+                    val percentText = "${piePart.percent * 100}"
                     val dotIndex = percentText.indexOf('.')
                     if (dotIndex > 0) {
                         val zeroNum = percentText.substring(dotIndex + 1).length
-                        it.percentText = "${percentText.substring(0, dotIndex + min(zeroNum, dotNum) + 1)}%"
+                        piePart.percentText = "${percentText.substring(0, dotIndex + min(zeroNum, dotNum) + 1)}%"
                     }
                     linePaint.textSize = percentTextSize
-                    val percentTextWidth = linePaint.measureText(it.percentText)
+                    val percentTextWidth = linePaint.measureText(piePart.percentText)
                     linePaint.textSize = descTextSize
-                    val descTextWidth = linePaint.measureText(it.desc)
+                    val descTextWidth = linePaint.measureText(piePart.desc)
                     val (percentX, descX) =
-                        if (it.quadrant == 1 || it.quadrant == 4)
-                            Pair(it.dEndPoint!!.x, it.dEndPoint!!.x)
+                        if (piePart.quadrant == 1 || piePart.quadrant == 4)
+                            Pair(piePart.dEndPoint!!.x + 3, piePart.dEndPoint!!.x)
                         else
-                            Pair(
-                                it.dEndPoint!!.x - percentTextWidth,
-                                it.dEndPoint!!.x - descTextWidth
-                            )
-                    it.percentTextX = percentX
-                    it.descTextX = descX
-                    it.percentTextY = it.dEndPoint!!.y
-                    it.descTextY = it.dEndPoint!!.y + descTextSize
+                            Pair(piePart.dEndPoint!!.x - percentTextWidth - 3, piePart.dEndPoint!!.x - descTextWidth - 3)
+                    piePart.percentTextX = percentX
+                    piePart.descTextX = descX
+                    piePart.percentTextY = piePart.dEndPoint!!.y
+                    piePart.descTextY = piePart.dEndPoint!!.y + descTextSize
                 }
             }
             chartViewBound = getPieChartViewBound()
@@ -293,49 +307,50 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
         }
     }
 
-    private fun correctDescRectF(pointF: PointF, quadrant: Int): PointF {
+    private fun correctDescRectF(pointF: PointF, quadrant: Int, frontPiePart: PiePart?): PointF {
         //x,y轴上情况的的处理
-        if (quadrant == 5) {
+        if (quadrant >= 5) {
             return pointF
         }
         //象限起始边界位置冲突描述修正，1、2象限下移避免交集
-        if (descCount == 0 && (quadrant == 1 || quadrant == 2)) {
+        if (descCount == 0) {
             val k = (pointF.y - radius) / (pointF.x - radius)
-            if ((k * 1000000).toInt() != 0) { //精度的处理，判断是否是坐标上
-                val b = radius - k * radius
-                pointF.y = pointF.y + (percentTextSize - descTextSize)
-                pointF.x = (pointF.y - b) / k
+            if ((k * 1000000000).toInt() != 0) { //精度的处理，判断是否是坐标上
+                if (quadrant == 1 || quadrant == 2) {
+                    //1、2象限无论是否有象限值，都向下移动。没有象限点的情况下，保证与3、4象限起始位置不冲突
+                    val value = pointF.y - radius - percentTextSize - descTextSize
+                    if (value < 0) {
+                        pointF.y = pointF.y - value
+                    }
+                } else {
+                    val value = pointF.y - radius + percentTextSize + descTextSize
+                    val pXBorderSize = piePartList.filter { it.quadrant == 5 }.size
+                    val nXBorderSize = piePartList.filter { it.quadrant == 6 }.size
+                    // 3、4象限有象限点才向上移动
+                    if (value > 0) {
+                        if ((quadrant == 3 && nXBorderSize > 0) || quadrant == 4 && pXBorderSize > 0)
+                            pointF.y = pointF.y - value
+                    }
+                }
             }
             return pointF
         }
-        //判断是否有碰撞的描述块，避让纠正位置
-        val correctPiePartQuadrantList =
-            piePartList.filter { it.quadrant == quadrant && it.dEndPoint != null }
-                .sortedBy {
-                    // 1、3象限角度正序计算描述位置 2、4象限倒序计算描述位置
-                    if (it.quadrant == 1 || it.quadrant == 3)
-                        it.startAngle
-                    else
-                        -it.startAngle
-                }
-        correctPiePartQuadrantList.forEach {
-            val k = (pointF.y - radius) / (pointF.x - radius)
-            val b = radius - k * radius
-            if (it.quadrant == 1 || it.quadrant == 2) {
+        //判断与前一个是否有碰撞，避让纠正位置
+        if (frontPiePart != null) {
+            if (frontPiePart.quadrant == 1 || frontPiePart.quadrant == 2) {
                 val targetPos = pointF.y - percentTextSize
-                val minus = targetPos - it.descTextY
+                val minus = targetPos - frontPiePart.descTextY
                 if (minus <= 0) {
                     pointF.y = pointF.y - minus
                 }
             }
-            if (it.quadrant == 3 || it.quadrant == 4) {
+            if (frontPiePart.quadrant == 3 || frontPiePart.quadrant == 4) {
                 val targetPos = pointF.y + descTextSize
-                val minus = targetPos - (it.percentTextY - percentTextSize)
+                val minus = targetPos - (frontPiePart.percentTextY - percentTextSize)
                 if (minus >= 0) {
                     pointF.y = pointF.y - minus
                 }
             }
-            pointF.x = (pointF.y - b) / k
         }
         return pointF
     }
@@ -380,6 +395,36 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
     }
 
     fun addPieParts(list: List<Triple<Int, Float, String>>, innerText: String = "") {
+        mInnerText = innerText
+        list.forEach {
+            piePartList.add(PiePart(it.first, it.second, it.third))
+        }
+        typographic()
+    }
+
+    fun setChartInfo(
+        list: List<Triple<Int, Float, String>>,
+        radius: Int = 60,
+        circleWidth: Int = 25,
+        descTextSize: Float = 13f,
+        percentTextSize: Float = 11f,
+        innerText: String = "",
+        roundNum: Int = 1
+    ) {
+        val density = resources.displayMetrics.density
+        this.radius = radius * density
+        this.strokeWidth = circleWidth * density
+        this.descTextSize = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_SP,
+            descTextSize,
+            resources.displayMetrics
+        )
+        this.percentTextSize = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_SP,
+            percentTextSize,
+            resources.displayMetrics
+        )
+        this.dotNum = roundNum
         mInnerText = innerText
         list.forEach {
             piePartList.add(PiePart(it.first, it.second, it.third))
