@@ -389,14 +389,14 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                     }
                 }
                 // 3、4象限有象限点才向上移动
-                if ((piePart.quadrant == 3 && pXBorderList.isNotEmpty())) {
-                    val value = pointF.y - radius + descTextSize * piePart.descLineNum + percentTextSize * pXBorderList[0].percentLineNum
+                if ((piePart.quadrant == 3 && nXBorderList.isNotEmpty())) {
+                    val value = pointF.y - radius + descTextSize * piePart.descLineNum + percentTextSize * nXBorderList[0].percentLineNum
                     if (value > 0) {
                         pointF.y = pointF.y - value
                     }
                 }
-                if (piePart.quadrant == 4 && nXBorderList.isNotEmpty()) {
-                    val value = pointF.y - radius + descTextSize * piePart.descLineNum + percentTextSize * nXBorderList[0].percentLineNum
+                if (piePart.quadrant == 4 && pXBorderList.isNotEmpty()) {
+                    val value = pointF.y - radius + descTextSize * piePart.descLineNum + percentTextSize * pXBorderList[0].percentLineNum
                     if (value > 0) {
                         pointF.y = pointF.y - value
                     }
