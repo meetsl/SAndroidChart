@@ -122,7 +122,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                     linePaint.color = if (mTextColor != null) Color.parseColor(mTextColor) else it.color
                     linePaint.textSize = percentTextSize
                     for (i in 0 until it.percentLineNum) {
-                        val startIndex = i * it.percentLineLength.roundToInt()
+                        val startIndex = (i * it.percentLineLength.roundToInt()).coerceAtMost(it.percentText.length - 1)
                         val endIndex = ((i + 1) * it.percentLineLength.roundToInt()).coerceAtMost(it.percentText.length)
                         val subText = it.percentText.substring(startIndex, endIndex)
                         val startX = it.percentTextX
@@ -131,7 +131,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                     }
                     linePaint.textSize = descTextSize
                     for (i in 0 until it.descLineNum) {
-                        val startIndex = i * it.descLineLength.roundToInt()
+                        val startIndex = (i * it.descLineLength.roundToInt()).coerceAtMost(it.desc.length - 1)
                         val endIndex = ((i + 1) * it.descLineLength.roundToInt()).coerceAtMost(it.desc.length)
                         val subText = it.desc.substring(startIndex, endIndex)
                         val startX = it.descTextX
