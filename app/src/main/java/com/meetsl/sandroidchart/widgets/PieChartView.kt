@@ -26,6 +26,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
     private var percentTextSize = 0f
     private var descTextSize = 0f
     private var mInnerText = ""
+    private var mTextColor: String? = null
 
     //水平延长线的长度
     private var drawHorizontalLineLength = 0f
@@ -52,8 +53,8 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
         val density = resources.displayMetrics.density
         radius = 60 * density
         strokeWidth = 25 * density
-        percentTextSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 13f, resources.displayMetrics)
-        descTextSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 11f, resources.displayMetrics)
+        percentTextSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 11f, resources.displayMetrics)
+        descTextSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 13f, resources.displayMetrics)
         //水平延长线的长度
         drawHorizontalLineLength = 16 * density
         //延长斜线的长度
@@ -118,6 +119,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                         it.dMiddlePoint!!.x, it.dMiddlePoint!!.y,
                         it.dEndPoint!!.x, it.dEndPoint!!.y, linePaint
                     )
+                    linePaint.color = if (mTextColor != null) Color.parseColor(mTextColor) else it.color
                     linePaint.textSize = percentTextSize
                     for (i in 0 until it.percentLineNum) {
                         val startIndex = i * it.percentLineLength.roundToInt()
@@ -147,7 +149,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
             canvas.drawPath(piePath, innerShadowPaint)
             if (drawInnerText) {
                 linePaint.textSize = percentTextSize
-                linePaint.color = Color.BLACK
+                linePaint.color = if (mTextColor != null) Color.parseColor(mTextColor) else Color.BLACK
                 if (mInnerText.length > 6) { //一行显示六个
                     val textRawNum = ceil(mInnerText.length / 6.0).toInt()
                     for (i in 0 until textRawNum) {
@@ -310,8 +312,8 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                     minY = currentPointMinY
                 }
                 piePart.dEndPoint = PointF(endPointX, endPointY)
-                piePart.percentTextY = piePart.dEndPoint!!.y - percentTextSize * (piePart.percentLineNum - 1)
-                piePart.descTextY = piePart.dEndPoint!!.y + descTextSize
+                piePart.descTextY = piePart.dEndPoint!!.y - descTextSize * (piePart.descLineNum - 1)
+                piePart.percentTextY = piePart.dEndPoint!!.y + percentTextSize
                 descCount++
             }
         }
@@ -325,8 +327,8 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                 if (piePart.quadrant == 8 && endPointY > minY) {
                     piePart.dEndPoint!!.y = minY - descTextSize * piePart.descLineNum
                 }
-                piePart.percentTextY = piePart.dEndPoint!!.y - percentTextSize * (piePart.percentLineNum - 1)
-                piePart.descTextY = piePart.dEndPoint!!.y + descTextSize
+                piePart.descTextY = piePart.dEndPoint!!.y - descTextSize * (piePart.descLineNum - 1)
+                piePart.percentTextY = piePart.dEndPoint!!.y + percentTextSize
             }
         }
         chartViewBound = getPieChartViewBound()
@@ -358,14 +360,14 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                 //1、2象限无论是否有象限值，都向下移动。没有象限点的情况下，保证与3、4象限起始位置不冲突
                 if (piePart.quadrant == 1) {
                     if (pXBorderList.isNotEmpty()) {
-                        val value = pointF.y - radius - percentTextSize * piePart.percentLineNum - descTextSize * pXBorderList[0].descLineNum
+                        val value = pointF.y - radius - descTextSize * piePart.descLineNum - percentTextSize * pXBorderList[0].percentLineNum
                         if (value < 0) {
                             pointF.y = pointF.y - value
                         }
                     } else {
                         if (cor3List.isNotEmpty()) {
                             val value =
-                                pointF.y - percentTextSize * piePart.percentLineNum - (cor3List[0].dEndPoint!!.y + descTextSize * cor3List[0].descLineNum)
+                                pointF.y - descTextSize * piePart.descLineNum - (cor3List[0].dEndPoint!!.y + percentTextSize * cor3List[0].percentLineNum)
                             if (value < 0) {
                                 pointF.y = pointF.y - value
                             }
@@ -374,14 +376,14 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                 }
                 if (piePart.quadrant == 2) {
                     if (nXBorderList.isNotEmpty()) {
-                        val value = pointF.y - radius - percentTextSize * piePart.percentLineNum - descTextSize * nXBorderList[0].descLineNum
+                        val value = pointF.y - radius - descTextSize * piePart.descLineNum - percentTextSize * nXBorderList[0].percentLineNum
                         if (value < 0) {
                             pointF.y = pointF.y - value
                         }
                     } else {
                         if (cor4List.isNotEmpty()) {
                             val value =
-                                pointF.y - percentTextSize * piePart.percentLineNum - (cor4List[0].dEndPoint!!.y + descTextSize * cor4List[0].descLineNum)
+                                pointF.y - descTextSize * piePart.descLineNum - (cor4List[0].dEndPoint!!.y + percentTextSize * cor4List[0].percentLineNum)
                             if (value < 0) {
                                 pointF.y = pointF.y - value
                             }
@@ -390,13 +392,13 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
                 }
                 // 3、4象限有象限点才向上移动
                 if ((piePart.quadrant == 3 && nXBorderList.isNotEmpty())) {
-                    val value = pointF.y - radius + descTextSize * piePart.descLineNum + percentTextSize * nXBorderList[0].percentLineNum
+                    val value = pointF.y - radius + percentTextSize * piePart.percentLineNum + descTextSize * nXBorderList[0].descLineNum
                     if (value > 0) {
                         pointF.y = pointF.y - value
                     }
                 }
                 if (piePart.quadrant == 4 && pXBorderList.isNotEmpty()) {
-                    val value = pointF.y - radius + descTextSize * piePart.descLineNum + percentTextSize * pXBorderList[0].percentLineNum
+                    val value = pointF.y - radius + percentTextSize * piePart.percentLineNum + descTextSize * pXBorderList[0].descLineNum
                     if (value > 0) {
                         pointF.y = pointF.y - value
                     }
@@ -407,15 +409,15 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
         //判断与前一个是否有碰撞，避让纠正位置
         if (frontPiePart != null) {
             if (frontPiePart.quadrant == 1 || frontPiePart.quadrant == 2) {
-                val targetPos = pointF.y - percentTextSize * piePart.percentLineNum
-                val minus = targetPos - (frontPiePart.descTextY + descTextSize * (frontPiePart.descLineNum - 1))
+                val targetPos = pointF.y - descTextSize * piePart.descLineNum
+                val minus = targetPos - (frontPiePart.percentTextY + percentTextSize * (frontPiePart.percentLineNum - 1))
                 if (minus <= 0) {
                     pointF.y = pointF.y - minus
                 }
             }
             if (frontPiePart.quadrant == 3 || frontPiePart.quadrant == 4) {
-                val targetPos = pointF.y + descTextSize * piePart.descLineNum
-                val minus = targetPos - (frontPiePart.percentTextY - percentTextSize * piePart.percentLineNum)
+                val targetPos = pointF.y + percentTextSize * piePart.percentLineNum
+                val minus = targetPos - (frontPiePart.descTextY - descTextSize)
                 if (minus >= 0) {
                     pointF.y = pointF.y - minus
                 }
@@ -480,6 +482,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
         descTextSize: Float = 13f,
         percentTextSize: Float = 11f,
         innerText: String = "",
+        textColor: String? = null,
         roundNum: Int = 1
     ) {
         val density = resources.displayMetrics.density
@@ -497,6 +500,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
         )
         this.dotNum = roundNum
         mInnerText = innerText
+        mTextColor = textColor
         list.forEach {
             piePartList.add(PiePart(it.first, it.second, it.third))
         }

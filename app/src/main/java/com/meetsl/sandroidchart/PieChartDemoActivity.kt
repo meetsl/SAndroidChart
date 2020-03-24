@@ -24,7 +24,7 @@ class PieChartDemoActivity : AppCompatActivity() {
         list.add(Triple(Color.WHITE, 1f, "30-40岁30-40岁30-40岁30-40岁30-40岁30-40岁"))
         list.add(Triple(Color.RED, 1f, "40-50岁40-50岁40-50岁40-50岁40-50岁40-50岁"))
         list.add(Triple(Color.GREEN, 1f, "50-60岁50-60岁50-60岁50-60岁50-60岁50-60岁"))
-        pcv_view.setChartInfo(list, radius = 40, roundNum = 100)
+        pcv_view.setChartInfo(list, radius = 40, roundNum = 2, textColor = "#223344")
     }
 
     fun clearParts(view: View) {
