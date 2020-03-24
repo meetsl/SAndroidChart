@@ -501,6 +501,7 @@ class PieChartView(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
         this.dotNum = roundNum
         mInnerText = innerText
         mTextColor = textColor
+        piePartList.clear()
         list.forEach {
             piePartList.add(PiePart(it.first, it.second, it.third))
         }
